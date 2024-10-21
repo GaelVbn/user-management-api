@@ -27,8 +27,7 @@ Ce projet est une API de gestion d'utilisateurs construite avec la stack MEN (Mo
 
 1. Clonez le dépôt :
    ```bash
-   git clone https://github.com/ton-utilisateur/nom-du-repo.git
-   cd nom-du-repo
+   git clone https://github.com/GaelVbn/user-management-api.git
    ```
 2. Installer les dépendances :
 
