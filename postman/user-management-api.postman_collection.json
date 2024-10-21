@@ -1,0 +1,199 @@
+{
+	"info": {
+		"_postman_id": "61acd4ca-c8c0-4ea2-84ec-9afa75470a7d",
+		"name": "user-management-api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "36793061"
+	},
+	"item": [
+		{
+			"name": "Register new user",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"fred\",\n    \"email\": \"fred@gmail.com\",\n    \"password\": \"qwerty\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3001/users/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"users",
+						"register"
+					]
+				},
+				"description": "The user provide the name, email and password."
+			},
+			"response": []
+		},
+		{
+			"name": "Login user",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"fred@gmail.com\",\n    \"password\": \"qwertyy\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3001/users/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"users",
+						"login"
+					]
+				},
+				"description": "The user provide the email and password."
+			},
+			"response": []
+		},
+		{
+			"name": "Get user profile by id",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MTYzMTVkZWY1YmViZWU2NzkxZTBmOSIsImlhdCI6MTcyOTUxOTU5OCwiZXhwIjoxNzI5NTIzMTk4fQ.h1IofXt5vH-QNSb3_CfvPx889j7uSYZLuzRicjtPe0Y",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "id",
+						"value": "671617a6433295f278c62b50",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3001/users/profile",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"users",
+						"profile"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "671617a6433295f278c62b50",
+							"disabled": true
+						}
+					]
+				},
+				"description": "To get the user profile the user has to be authentifacted with a valid Token."
+			},
+			"response": []
+		},
+		{
+			"name": "delete user",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MTYzMTVkZWY1YmViZWU2NzkxZTBmOSIsImlhdCI6MTcyOTUxOTU5OCwiZXhwIjoxNzI5NTIzMTk4fQ.h1IofXt5vH-QNSb3_CfvPx889j7uSYZLuzRicjtPe0Y",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "id",
+						"value": "67164ca6b8d16dba8f39bf3a",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3001/users/delete/67164ca6b8d16dba8f39bf3a",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"users",
+						"delete",
+						"67164ca6b8d16dba8f39bf3a"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "67164ca6b8d16dba8f39bf3a?id",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "UPDATE PASSWORD",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MTY2YTY3MzBiZGZjNGIxYzI1YjkwYiIsImlhdCI6MTcyOTUyMjI3OSwiZXhwIjoxNzI5NTI1ODc5fQ.aE-lQkMuKC1vO9FciqtbHSoIgjgnF8I1bAR4_ODVEHI",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"oldPassword\": \"ancienMotDePasse\",\n  \"newPassword\": \"nouveauMotDePasse\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3001/users/update-password",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"users",
+						"update-password"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
