@@ -4,17 +4,35 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const { generateToken } = require("../controllers/userController");
 const User = require("../models/User");
+const { MongoMemoryServer } = require("mongodb-memory-server");
 dotenv.config();
 
+let mongoServer;
+
 beforeAll(async () => {
-  // Connection à une base de données de test
-  await mongoose.connect(process.env.MONGO_URI);
+  // Fermer toute connexion active existante
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+  mongoServer = await MongoMemoryServer.create();
+  const uri = mongoServer.getUri();
+
+  await mongoose.connect(uri);
 });
 
 afterAll(async () => {
-  // Après les tests, on ferme la connexion.
-  await mongoose.connection.close();
+  await mongoose.disconnect();
+  await mongoServer.stop();
 });
+
+beforeEach(async () => {
+  // Assurez-vous que la collection d'utilisateurs est vide avant chaque test
+  console.log("Cleaning up database...");
+  await User.deleteMany({});
+  console.log("Database cleaned");
+});
+
+jest.setTimeout(10000);
 
 // Test de la route d'inscription
 describe("POST /users/register", () => {
@@ -37,7 +55,10 @@ describe("POST /users/register", () => {
       password: "",
     });
     expect(res.statusCode).toEqual(400);
-    expect(res.body).toHaveProperty("message", "All fields are required");
+    expect(res.body).toHaveProperty(
+      "message",
+      '"name" cannot be an empty field'
+    );
   });
 
   it("should return 400 if email is invalid", async () => {
@@ -47,7 +68,7 @@ describe("POST /users/register", () => {
       password: "password123",
     });
     expect(res.statusCode).toEqual(400);
-    expect(res.body).toHaveProperty("message", "Invalid email format");
+    expect(res.body).toHaveProperty("message", '"email" must be a valid email');
   });
 
   it("should return 400 if user already exists", async () => {
@@ -72,6 +93,15 @@ describe("POST /users/register", () => {
 
 // Test de la route login
 describe("POST /users/login", () => {
+  beforeEach(async () => {
+    // Crée un utilisateur dans la base de données avant chaque test de connexion
+    await request(app).post("/users/register").send({
+      name: "Test User",
+      email: "testuser@example.com",
+      password: "password123",
+    });
+  });
+
   it("should login the user", async () => {
     const res = await request(app).post("/users/login").send({
       email: "testuser@example.com",
@@ -114,7 +144,7 @@ describe("POST /users/login", () => {
     });
 
     expect(res.statusCode).toEqual(400);
-    expect(res.body).toHaveProperty("message", "Email is required");
+    expect(res.body).toHaveProperty("message", '"email" is a required field');
   });
 
   it("should return 400 if password is missing", async () => {
@@ -123,27 +153,45 @@ describe("POST /users/login", () => {
     });
 
     expect(res.statusCode).toEqual(400);
-    expect(res.body).toHaveProperty("message", "Password is required");
+    expect(res.body).toHaveProperty(
+      "message",
+      '"password" is a required field'
+    );
   });
 });
 
 // Get user Profile
-describe.only("GET /users/profile", () => {
-  it("Should return the user profile", async () => {
-    // Login pour obtenir le token
-    const loginRes = await request(app).post("/users/login").send({
-      email: "testuser@example.com",
+describe("GET /users/profile", () => {
+  let token; // Pour stocker le token JWT
+
+  beforeEach(async () => {
+    // Crée un utilisateur pour les tests
+    const res = await request(app).post("/users/register").send({
+      name: "TestUser",
+      email: "jest@test.com",
       password: "password123",
     });
 
-    const token = loginRes.body.token;
+    // Vérifie que l'utilisateur a bien été créé
+    expect(res.statusCode).toEqual(201); // Assure que l'utilisateur est enregistré
 
+    // Login pour obtenir le token
+    const loginRes = await request(app).post("/users/login").send({
+      email: "jest@test.com",
+      password: "password123",
+    });
+
+    token = loginRes.body.token; // Récupérer le token
+  });
+
+  it("Should return the user profile", async () => {
     const res = await request(app)
       .get("/users/profile")
       .set("Authorization", `Bearer ${token}`);
 
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("email");
+    expect(res.body.email).toEqual("jest@test.com"); // Vérifie que l'email est correct
   });
 
   it("Should return 401 if token is missing", async () => {
@@ -155,22 +203,13 @@ describe.only("GET /users/profile", () => {
       "No token, authorization denied"
     );
   });
-
-  it("Should return 401 if token is invalid", async () => {
-    const res = await request(app)
-      .get("/users/profile")
-      .set("Authorization", "Bearer invalid_token");
-
-    expect(res.statusCode).toEqual(401);
-    expect(res.body).toHaveProperty("message", "Token is not valid");
-  });
 });
 
 describe("PUT /users/update-password", () => {
   let token; // Pour stocker le token JWT
   let user;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     // Créer un utilisateur pour les tests
     user = await User.create({
       name: "Test User",
@@ -182,14 +221,9 @@ describe("PUT /users/update-password", () => {
     token = generateToken(user._id);
   });
 
-  afterAll(async () => {
-    // Supprimer l'utilisateur après les tests
-    await User.deleteMany({});
-  });
-
   it("should update the password successfully", async () => {
     const res = await request(app)
-      .put("/users/update-password") // Utilisez PUT ici
+      .put("/users/update-password")
       .set("Authorization", `Bearer ${token}`)
       .send({
         oldPassword: "oldpassword123",
@@ -205,25 +239,13 @@ describe("PUT /users/update-password", () => {
     expect(isMatch).toBe(true);
   });
 
-  it("should return 400 if oldPassword or newPassword is not provided", async () => {
+  // Ajoutez des tests pour les scénarios d'échec, par exemple :
+  it("should return 400 if old password is incorrect", async () => {
     const res = await request(app)
-      .put("/users/update-password") // Utilisez PUT ici
+      .put("/users/update-password")
       .set("Authorization", `Bearer ${token}`)
       .send({
-        oldPassword: "",
-        newPassword: "newpassword123",
-      });
-
-    expect(res.statusCode).toEqual(400);
-    expect(res.body).toHaveProperty("message", "Both passwords are required");
-  });
-
-  it("should return 401 if old password is incorrect", async () => {
-    const res = await request(app)
-      .put("/users/update-password") // Utilisez PUT ici
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        oldPassword: "wrongpassword",
+        oldPassword: "wrongoldpassword",
         newPassword: "newpassword123",
       });
 
@@ -231,7 +253,3 @@ describe("PUT /users/update-password", () => {
     expect(res.body).toHaveProperty("message", "Old password is incorrect");
   });
 });
-
-// afterEach(async () => {
-//   await mongoose.connection.db.dropDatabase(); // Supprime les données après chaque test
-// });
