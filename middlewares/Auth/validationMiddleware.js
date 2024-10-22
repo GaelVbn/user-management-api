@@ -1,4 +1,7 @@
-const { registerSchema, loginSchema } = require("../models/validations"); // Mettez à jour le chemin selon votre structure
+const {
+  registerSchema,
+  loginSchema,
+} = require("../../features/Auth/validations"); // Mettez à jour le chemin selon votre structure
 
 const validateRegister = (req, res, next) => {
   const { error } = registerSchema.validate(req.body);

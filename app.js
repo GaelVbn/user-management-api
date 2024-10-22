@@ -12,7 +12,8 @@ const app = express();
 app.use(express.json()); // Pour traiter les JSON
 
 // Routes
-app.use("/users", require("./routes/userRoutes"));
+app.use("/users", require("./features/Auth/user/userRoutes"));
+app.use("/admin", require("./features/Auth/admin/adminRoutes"));
 
 const PORT = process.env.PORT || 3001;
 

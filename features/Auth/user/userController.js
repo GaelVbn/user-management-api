@@ -1,4 +1,4 @@
-const User = require("../models/User");
+const User = require("../UserModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
@@ -8,7 +8,7 @@ const generateToken = (id) => {
 };
 
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
@@ -23,11 +23,15 @@ const registerUser = async (req, res) => {
   if (userExists) {
     return res.status(400).json({ message: "User already exists" });
   }
+  // Vérifier que le rôle est valide
+  const validRoles = ["user", "admin"];
+  const userRole = validRoles.includes(role) ? role : "user"; // Si le rôle n'est pas valide, utiliser "user"
 
   const user = await User.create({
     name,
     email,
     password,
+    role: userRole,
   });
 
   if (user) {
@@ -83,24 +87,6 @@ const getUserProfile = async (req, res) => {
     res.status(404).json({ message: "User not found" });
   }
 };
-
-// DELETE A USER
-const deleteUser = async (req, res) => {
-  const { id } = req.params; // Récupérer l'ID de l'utilisateur à supprimer
-
-  try {
-    const user = await User.findByIdAndDelete(id); // Supprimer l'utilisateur
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.status(200).json({ message: "User deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
 // UPDATE PASSWORD
 const updatePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
@@ -130,7 +116,6 @@ module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
-  deleteUser,
   updatePassword,
   generateToken,
 };

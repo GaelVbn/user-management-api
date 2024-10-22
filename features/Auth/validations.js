@@ -14,6 +14,7 @@ const registerSchema = Joi.object({
     "string.min": `"password" should have a minimum length of {#limit}`,
     "any.required": `"password" is a required field`,
   }),
+  role: Joi.string().valid("user", "admin").optional(),
 });
 
 const loginSchema = Joi.object({

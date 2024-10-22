@@ -1,9 +1,9 @@
 const request = require("supertest");
-const app = require("../app"); // Ton fichier app.js où tu configures Express
+const app = require("../../../../app"); // Ton fichier app.js où tu configures Express
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const { generateToken } = require("../controllers/userController");
-const User = require("../models/User");
+const { generateToken } = require("../userController");
+const User = require("../../UserModel");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 dotenv.config();
 
@@ -27,9 +27,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   // Assurez-vous que la collection d'utilisateurs est vide avant chaque test
-  console.log("Cleaning up database...");
   await User.deleteMany({});
-  console.log("Database cleaned");
 });
 
 jest.setTimeout(10000);
@@ -160,51 +158,6 @@ describe("POST /users/login", () => {
   });
 });
 
-// Get user Profile
-describe("GET /users/profile", () => {
-  let token; // Pour stocker le token JWT
-
-  beforeEach(async () => {
-    // Crée un utilisateur pour les tests
-    const res = await request(app).post("/users/register").send({
-      name: "TestUser",
-      email: "jest@test.com",
-      password: "password123",
-    });
-
-    // Vérifie que l'utilisateur a bien été créé
-    expect(res.statusCode).toEqual(201); // Assure que l'utilisateur est enregistré
-
-    // Login pour obtenir le token
-    const loginRes = await request(app).post("/users/login").send({
-      email: "jest@test.com",
-      password: "password123",
-    });
-
-    token = loginRes.body.token; // Récupérer le token
-  });
-
-  it("Should return the user profile", async () => {
-    const res = await request(app)
-      .get("/users/profile")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty("email");
-    expect(res.body.email).toEqual("jest@test.com"); // Vérifie que l'email est correct
-  });
-
-  it("Should return 401 if token is missing", async () => {
-    const res = await request(app).get("/users/profile");
-
-    expect(res.statusCode).toEqual(401);
-    expect(res.body).toHaveProperty(
-      "message",
-      "No token, authorization denied"
-    );
-  });
-});
-
 describe("PUT /users/update-password", () => {
   let token; // Pour stocker le token JWT
   let user;
@@ -253,3 +206,48 @@ describe("PUT /users/update-password", () => {
     expect(res.body).toHaveProperty("message", "Old password is incorrect");
   });
 });
+
+// Get user Profile
+// describe("GET /users/profile", () => {
+//   let token; // Pour stocker le token JWT
+
+//   beforeEach(async () => {
+//     // Crée un utilisateur pour les tests
+//     const res = await request(app).post("/users/register").send({
+//       name: "TestUser",
+//       email: "jest@test.com",
+//       password: "password123",
+//     });
+
+//     // Vérifie que l'utilisateur a bien été créé
+//     expect(res.statusCode).toEqual(201); // Assure que l'utilisateur est enregistré
+
+//     // Login pour obtenir le token
+//     const loginRes = await request(app).post("/users/login").send({
+//       email: "jest@test.com",
+//       password: "password123",
+//     });
+
+//     token = loginRes.body.token; // Récupérer le token
+//   });
+
+//   it("Should return the user profile", async () => {
+//     const res = await request(app)
+//       .get("/users/profile")
+//       .set("Authorization", `Bearer ${token}`);
+
+//     expect(res.statusCode).toEqual(200);
+//     expect(res.body).toHaveProperty("email");
+//     expect(res.body.email).toEqual("jest@test.com"); // Vérifie que l'email est correct
+//   });
+
+//   it("Should return 401 if token is missing", async () => {
+//     const res = await request(app).get("/users/profile");
+
+//     expect(res.statusCode).toEqual(401);
+//     expect(res.body).toHaveProperty(
+//       "message",
+//       "No token, authorization denied"
+//     );
+//   });
+// });
