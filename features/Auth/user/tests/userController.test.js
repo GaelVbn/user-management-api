@@ -208,46 +208,41 @@ describe("PUT /users/update-password", () => {
 });
 
 // Get user Profile
-// describe("GET /users/profile", () => {
-//   let token; // Pour stocker le token JWT
+describe("GET /users/profile", () => {
+  let token; // Pour stocker le token JWT
+  let user;
 
-//   beforeEach(async () => {
-//     // Crée un utilisateur pour les tests
-//     const res = await request(app).post("/users/register").send({
-//       name: "TestUser",
-//       email: "jest@test.com",
-//       password: "password123",
-//     });
+  beforeEach(async () => {
+    // Créer un utilisateur pour les tests
+    user = await User.create({
+      name: "Test User",
+      email: "testuser@example.com",
+      password: "oldpassword123",
+    });
 
-//     // Vérifie que l'utilisateur a bien été créé
-//     expect(res.statusCode).toEqual(201); // Assure que l'utilisateur est enregistré
+    // Générer un token pour l'utilisateur
+    token = generateToken(user._id);
+  });
 
-//     // Login pour obtenir le token
-//     const loginRes = await request(app).post("/users/login").send({
-//       email: "jest@test.com",
-//       password: "password123",
-//     });
+  it("should return the user's profile when authenticated", async () => {
+    const res = await request(app)
+      .get("/users/profile")
+      .set("Authorization", `Bearer ${token}`); // Passer le token JWT
 
-//     token = loginRes.body.token; // Récupérer le token
-//   });
+    // Vérifier que le statut de la réponse est 200 (succès)
+    expect(res.statusCode).toBe(200);
 
-//   it("Should return the user profile", async () => {
-//     const res = await request(app)
-//       .get("/users/profile")
-//       .set("Authorization", `Bearer ${token}`);
+    // Vérifier que les données de l'utilisateur sont présentes dans la réponse
+    expect(res.body).toHaveProperty("_id", user._id.toString());
+    expect(res.body).toHaveProperty("name", user.name);
+    expect(res.body).toHaveProperty("email", user.email);
+  });
 
-//     expect(res.statusCode).toEqual(200);
-//     expect(res.body).toHaveProperty("email");
-//     expect(res.body.email).toEqual("jest@test.com"); // Vérifie que l'email est correct
-//   });
+  it("should return 401 if the user is not authenticated", async () => {
+    const res = await request(app).get("/users/profile"); // Pas de token JWT
 
-//   it("Should return 401 if token is missing", async () => {
-//     const res = await request(app).get("/users/profile");
-
-//     expect(res.statusCode).toEqual(401);
-//     expect(res.body).toHaveProperty(
-//       "message",
-//       "No token, authorization denied"
-//     );
-//   });
-// });
+    // Vérifier que le statut de la réponse est 401 (Non autorisé)
+    expect(res.statusCode).toBe(401);
+    expect(res.body.message).toBe("No token, authorization denied");
+  });
+});
