@@ -1,5 +1,6 @@
-const Joi = require("joi");
+import Joi from "joi";
 
+// Définition du schéma de validation pour l'enregistrement d'utilisateur
 const registerSchema = Joi.object({
   name: Joi.string().required().messages({
     "string.base": `"name" should be a type of 'text'`,
@@ -17,6 +18,7 @@ const registerSchema = Joi.object({
   role: Joi.string().valid("user", "admin").optional(),
 });
 
+// Définition du schéma de validation pour la connexion d'utilisateur
 const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": `"email" must be a valid email`,
@@ -28,5 +30,5 @@ const loginSchema = Joi.object({
   }),
 });
 
-// Exportez les schémas
-module.exports = { registerSchema, loginSchema };
+// Export des schémas
+export { registerSchema, loginSchema };
