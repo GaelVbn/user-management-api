@@ -1,9 +1,9 @@
 import request from "supertest";
-import app from "../../../../app"; // Ton fichier app.ts où tu configures Express
+import app from "../../../app"; // Ton fichier app.ts où tu configures Express
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import User from "../../UserModel";
-import { generateToken } from "../../user/userController";
+import User from "../../../models/UserModel";
+import { generateToken } from "../../Auth/authController";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 dotenv.config();
@@ -35,7 +35,7 @@ beforeEach(async () => {
 describe("DELETE /admin/delete/:id", () => {
   it("should allow an admin to delete a normal user", async () => {
     // Créer un utilisateur normal
-    const normalUserResponse = await request(app).post("/users/register").send({
+    const normalUserResponse = await request(app).post("/auth/register").send({
       name: "Normal User",
       email: "normal@test.com",
       password: "password123",
@@ -44,7 +44,7 @@ describe("DELETE /admin/delete/:id", () => {
     const normalUser = normalUserResponse.body;
 
     // Créer un utilisateur admin
-    const adminUserResponse = await request(app).post("/users/register").send({
+    const adminUserResponse = await request(app).post("/auth/register").send({
       name: "Admin User",
       email: "admin@test.com",
       password: "adminpassword123",
@@ -73,7 +73,7 @@ describe("DELETE /admin/delete/:id", () => {
 describe("DELETE /admin/delete/:id", () => {
   it("should return an error if a non-admin tries to delete a user", async () => {
     // Créer un utilisateur normal
-    const normalUserResponse = await request(app).post("/users/register").send({
+    const normalUserResponse = await request(app).post("/auth/register").send({
       name: "Normal User",
       email: "normal@test.com",
       password: "password123",
@@ -83,7 +83,7 @@ describe("DELETE /admin/delete/:id", () => {
 
     // Créer un utilisateur non-admin
     const nonAdminUserResponse = await request(app)
-      .post("/users/register")
+      .post("/auth/register")
       .send({
         name: "Non Admin User",
         email: "nonadmin@test.com",

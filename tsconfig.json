@@ -11,6 +11,6 @@
     "moduleResolution": "node", // Important pour Jest et la résolution des modules
     "types": ["jest", "node"] // Assure que Jest et Node types sont inclus
   },
-  "include": ["features/**/*.ts", "tests/**/*.ts"], // Inclut les fichiers de test et les fonctionnalités
+  "include": ["features/**/*.ts", "tests/**/*.ts", "models/UserModel.ts"], // Inclut les fichiers de test et les fonctionnalités
   "exclude": ["node_modules"] // Exclut node_modules pour éviter la transpilation inutile
 }

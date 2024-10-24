@@ -1,5 +1,5 @@
 import { Request, Response } from "express"; // Importer les types Request et Response
-import User from "../UserModel"; // Utiliser l'importation ES6
+import User from "../../../models/UserModel"; // Utiliser l'importation ES6
 
 // DELETE A USER
 const deleteUser = async (req: Request, res: Response): Promise<void> => {

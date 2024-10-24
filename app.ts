@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import connectDB from "./config/database"; // Assurez-vous que le fichier de configuration est également converti en TS
 import dotenv from "dotenv";
-import { IUser } from "./features/Auth/UserModel"; // Assurez-vous que le modèle User est bien typé
+import { IUser } from "./models/UserModel"; // Assurez-vous que le modèle User est bien typé
 dotenv.config();
 
 // Connect to MongoDB
@@ -22,8 +22,15 @@ declare global {
 app.use(express.json()); // Pour traiter les JSON
 
 // Routes
-app.use("/users", require("./features/Auth/user/userRoutes").default); // Ajouter .default pour le module ES
-app.use("/admin", require("./features/Auth/admin/adminRoutes").default); // Ajouter .default pour le module ES
+app.use("/auth", require("./features/Auth/authRoutes").default); // Ajouter .default pour le module ES
+app.use(
+  "/users",
+  require("./features/user-management/user/userRoutes").default
+); // Ajouter .default pour le module ES
+app.use(
+  "/admin",
+  require("./features/user-management/admin/adminRoutes").default
+); // Ajouter .default pour le module ES
 
 const PORT = process.env.PORT || 3001;
 

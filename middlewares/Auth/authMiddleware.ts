@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import User, { IUser } from "../../features/Auth/UserModel";
+import User, { IUser } from "../../models/UserModel";
 
 const protect = async (req: Request, res: Response, next: NextFunction) => {
   let token: string | undefined;
