@@ -8,7 +8,6 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: string; // Ajoute les rôles, par exemple : "user" | "admin"
-  comparePassword(password: string): Promise<boolean>; // méthode pour comparer les mots de passe
 }
 
 const userSchema: Schema<IUser> = new Schema(
