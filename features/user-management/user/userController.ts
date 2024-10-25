@@ -13,7 +13,6 @@ const getUserProfile = async (req: Request, res: Response): Promise<void> => {
 
   if (user) {
     res.status(200).json({
-      _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,

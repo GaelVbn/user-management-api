@@ -69,6 +69,7 @@ const getAllUsers = async (
 
     // Recherche des utilisateurs dans la base de données
     const users = await User.find(query)
+      .select("-password -_id")
       .sort(sortQuery)
       .skip(skip)
       .limit(pageSize);
@@ -104,4 +105,30 @@ const getAllUsers = async (
   }
 };
 
-export { deleteUser, getAllUsers };
+const updateUserRole = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      id,
+      { role },
+      { new: true }
+    ).select("-password -_id");
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "User role updated successfully",
+      user: user,
+    });
+  } catch (err) {
+    console.error("Error updating user role:", err); // Log d'erreur pour le débogage
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export { deleteUser, getAllUsers, updateUserRole };
