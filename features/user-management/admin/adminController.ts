@@ -4,10 +4,15 @@ import User from "../../../models/UserModel";
 // DELETE A USER
 const deleteUser = async (req: Request, res: Response): Promise<void> => {
   // Typage des paramètres de la fonction
-  const { id } = req.params; // Récupérer l'ID de l'utilisateur à supprimer
+  const { email } = req.body; // Récupérer l'email de l'utilisateur à supprimer
+
+  if (!email) {
+    res.status(400).json({ message: "Email is required" });
+    return;
+  }
 
   try {
-    const user = await User.findByIdAndDelete(id); // Supprimer l'utilisateur
+    const user = await User.findOneAndDelete(email); // Supprimer l'utilisateur
 
     if (!user) {
       res.status(404).json({ message: "User not found" });
@@ -106,21 +111,29 @@ const getAllUsers = async (
 };
 
 const updateUserRole = async (req: Request, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const { role } = req.body;
+  const { email, role } = req.body;
+
+  // Vérification des paramètres requis
+  if (!email || !role) {
+    res.status(400).json({ message: "Email and role are required" });
+    return;
+  }
 
   try {
-    const user = await User.findByIdAndUpdate(
-      id,
+    // Mise à jour du rôle de l'utilisateur par email
+    const user = await User.findOneAndUpdate(
+      { email }, // Critère de recherche
       { role },
       { new: true }
     ).select("-password -_id");
 
+    // Vérifier si l'utilisateur a été trouvé et mis à jour
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
 
+    // Répondre avec succès
     res.status(200).json({
       message: "User role updated successfully",
       user: user,
