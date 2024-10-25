@@ -320,7 +320,7 @@ describe("GET /admin/getAllUsers with filters", () => {
   });
 });
 
-describe.only("PUT /admin/updateUser", () => {
+describe("PUT /admin/updateUser", () => {
   let normalUserToken: string;
   let adminUserToken: string;
 
