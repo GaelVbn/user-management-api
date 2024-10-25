@@ -17,6 +17,7 @@ const getUserProfile = async (req: Request, res: Response): Promise<void> => {
       email: user.email,
       role: user.role,
     });
+    return;
   } else {
     res.status(404).json({ message: "User not found" });
   }
@@ -54,6 +55,35 @@ const updatePassword = async (req: Request, res: Response): Promise<void> => {
   await user.save();
 
   res.status(200).json({ message: "Password updated successfully" });
+  return;
 };
 
-export { getUserProfile, updatePassword };
+const updateName = async (req: Request, res: Response): Promise<void> => {
+  const { email, name } = req.body;
+
+  if (!email || !name) {
+    res.status(400).json({ message: "Email and name fields are required" });
+    return;
+  }
+
+  try {
+    const user = await User.findOneAndUpdate(
+      { email },
+      { name },
+      { new: true, runValidators: true }
+    ).select("-password -_id");
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({ message: "Name updated successfully", user });
+    return;
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating user name" });
+  }
+};
+
+export { getUserProfile, updatePassword, updateName };

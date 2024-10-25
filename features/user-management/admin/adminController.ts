@@ -20,9 +20,11 @@ const deleteUser = async (req: Request, res: Response): Promise<void> => {
     }
 
     res.status(200).json({ message: "User deleted successfully" });
+    return;
   } catch (error) {
     console.error("Error deleting user:", error); // Ajout d'un log d'erreur pour le débogage
     res.status(500).json({ message: "Server error" });
+    return;
   }
 };
 
@@ -138,9 +140,11 @@ const updateUserRole = async (req: Request, res: Response): Promise<void> => {
       message: "User role updated successfully",
       user: user,
     });
+    return;
   } catch (err) {
     console.error("Error updating user role:", err); // Log d'erreur pour le débogage
     res.status(500).json({ message: "Server error" });
+    return;
   }
 };
 

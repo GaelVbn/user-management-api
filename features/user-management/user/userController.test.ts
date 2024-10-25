@@ -116,3 +116,51 @@ describe("GET /users/profile", () => {
     expect(res.body.message).toBe("No token, authorization denied");
   });
 });
+
+// Test de la mise a jour du nom d'utilisateur
+describe("PUT /users/updateName", () => {
+  let token: string;
+  let user: IUser;
+
+  beforeEach(async () => {
+    // Créer un utilisateur via la route d'inscription et récupérer le token
+    const userResponse = await request(app).post("/auth/register").send({
+      name: "Test User",
+      email: "testuser@example.com",
+      password: "password123",
+    });
+
+    user = userResponse.body;
+    expect(user).toHaveProperty("token"); // Vérifier que le token est présent dans la réponse
+    token = user.token;
+  });
+
+  it("should update the name of the current user", async () => {
+    const res = await request(app)
+      .put("/users/updateName")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        email: "testuser@example.com",
+        name: "Updated Name",
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty("message", "Name updated successfully");
+
+    const updatedUser = await User.findOne({ email: "testuser@example.com" });
+    expect(updatedUser?.name).toBe("Updated Name");
+  });
+
+  it("should return 401 if the email is not the current user's", async () => {
+    const res = await request(app)
+      .put("/users/updateName")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        email: "wrongemail@example.com",
+        name: "Updated Name",
+      });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty("message", "User not found");
+  });
+});

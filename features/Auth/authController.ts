@@ -54,8 +54,10 @@ const registerUser = async (req: Request, res: Response): Promise<void> => {
       email: user.email,
       token: generateToken(user._id.toString()), // Convertir en chaîne de caractères
     });
+    return;
   } else {
     res.status(400).json({ message: "Invalid user data" });
+    return;
   }
 };
 
@@ -82,8 +84,10 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
       email: user.email,
       token: generateToken(user._id.toString()), // Convertir en chaîne de caractères
     });
+    return;
   } else {
     res.status(401).json({ message: "Email or password is incorrect" });
+    return;
   }
 };
 
