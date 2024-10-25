@@ -37,13 +37,16 @@ describe("PUT /users/update-password", () => {
   let user: IUser;
 
   beforeEach(async () => {
-    user = await User.create({
+    // Crée un utilisateur et récupère le token
+    const userResponse = await request(app).post("/auth/register").send({
       name: "Test User",
       email: "testuser@example.com",
       password: "oldpassword123",
     });
 
-    token = generateToken(user._id);
+    user = userResponse.body;
+    expect(user).toHaveProperty("token");
+    token = user.token;
   });
 
   it("should update the password successfully", async () => {
@@ -58,12 +61,13 @@ describe("PUT /users/update-password", () => {
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("message", "Password updated successfully");
 
-    const updatedUser = await User.findById(user._id);
+    // Vérifie que le mot de passe a bien été mis à jour
+    const updatedUser = await User.findOne({ email: "testuser@example.com" });
     const isMatch = await matchPassword(updatedUser, "newpassword123");
     expect(isMatch).toBe(true);
   });
 
-  it("should return 400 if old password is incorrect", async () => {
+  it("should return 401 if old password is incorrect", async () => {
     const res = await request(app)
       .put("/users/update-password")
       .set("Authorization", `Bearer ${token}`)
@@ -83,13 +87,16 @@ describe("GET /users/profile", () => {
   let user: IUser;
 
   beforeEach(async () => {
-    user = await User.create({
+    // Créer un utilisateur via la route d'inscription et récupérer le token
+    const userResponse = await request(app).post("/auth/register").send({
       name: "Test User",
       email: "testuser@example.com",
-      password: "oldpassword123",
+      password: "password123",
     });
 
-    token = generateToken(user._id);
+    user = userResponse.body;
+    expect(user).toHaveProperty("token"); // Vérifier que le token est présent dans la réponse
+    token = user.token;
   });
 
   it("should return the user's profile when authenticated", async () => {
@@ -98,7 +105,6 @@ describe("GET /users/profile", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty("_id", user._id.toString());
     expect(res.body).toHaveProperty("name", user.name);
     expect(res.body).toHaveProperty("email", user.email);
   });

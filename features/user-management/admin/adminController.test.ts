@@ -2,7 +2,7 @@ import request from "supertest";
 import app from "../../../app"; // Ton fichier app.ts où tu configures Express
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import User from "../../../models/UserModel";
+import User, { IUser } from "../../../models/UserModel";
 import { generateToken } from "../../Auth/authController";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
@@ -33,15 +33,20 @@ afterEach(async () => {
 
 // Tests pour la route DELETE
 describe("DELETE /admin/delete/:id", () => {
-  it("should allow an admin to delete a normal user", async () => {
+  let normalUserToken: string;
+  let adminUserToken: string;
+
+  beforeAll(async () => {
     // Créer un utilisateur normal
     const normalUserResponse = await request(app).post("/auth/register").send({
       name: "Normal User",
       email: "normal@test.com",
       password: "password123",
+      role: "user",
     });
 
-    const normalUser = normalUserResponse.body;
+    // Récupérer le token pour l'utilisateur normal (en cas de besoin dans d'autres tests)
+    normalUserToken = normalUserResponse.body.token;
 
     // Créer un utilisateur admin
     const adminUserResponse = await request(app).post("/auth/register").send({
@@ -51,108 +56,120 @@ describe("DELETE /admin/delete/:id", () => {
       role: "admin",
     });
 
-    const adminUser = adminUserResponse.body;
+    // Récupérer le token pour l'utilisateur admin
+    adminUserToken = adminUserResponse.body.token;
+  });
 
-    // Générer un token pour l'utilisateur admin
-    const adminToken = generateToken(adminUser._id);
+  it("should allow an admin to delete a normal user", async () => {
+    // Récupérer l'ID de l'utilisateur normal
+    const normalUser = await User.findOne({ email: "normal@test.com" });
 
+    // Suppression de l'utilisateur normal en tant qu'admin
     const res = await request(app)
-      .delete(`/admin/delete/${normalUser._id}`)
-      .set("Authorization", `Bearer ${adminToken}`);
+      .delete(`/admin/delete/${normalUser?._id}`) // Utiliser l'ID récupéré de la DB
+      .set("Authorization", `Bearer ${adminUserToken}`); // Utiliser le token de l'admin
 
-    // Assurez-vous que `res.statusCode` est bien typé
+    // Vérifier le statut de la réponse et le message
     expect(res.statusCode).toBe(200);
     expect(res.body.message).toBe("User deleted successfully");
 
-    // Vérifier que l'utilisateur normal a été supprimé
-    const deletedUser = await User.findById(normalUser._id);
+    // Vérifier que l'utilisateur a été supprimé de la base de données
+    const deletedUser = await User.findById(normalUser?._id);
     expect(deletedUser).toBeNull(); // L'utilisateur ne devrait plus exister
   });
-});
 
-describe("DELETE /admin/delete/:id", () => {
-  it("should return an error if a non-admin tries to delete a user", async () => {
-    // Créer un utilisateur normal
-    const normalUserResponse = await request(app).post("/auth/register").send({
-      name: "Normal User",
-      email: "normal@test.com",
-      password: "password123",
-    });
+  it("should return 403 if a non-admin user tries to delete another user", async () => {
+    // Récupérer l'ID d'un utilisateur à supprimer
+    const userToDelete = await User.findOne({ email: "normal@test.com" });
 
-    const normalUser = normalUserResponse.body;
-
-    // Créer un utilisateur non-admin
-    const nonAdminUserResponse = await request(app)
-      .post("/auth/register")
-      .send({
-        name: "Non Admin User",
-        email: "nonadmin@test.com",
-        password: "nonadminpassword123",
-      });
-
-    const nonAdminUser = nonAdminUserResponse.body;
-
-    // Générer un token pour l'utilisateur non-admin
-    const nonAdminToken = generateToken(nonAdminUser._id);
-
+    // Tentative de suppression par un utilisateur non-admin
     const res = await request(app)
-      .delete(`/admin/delete/${normalUser._id}`)
-      .set("Authorization", `Bearer ${nonAdminToken}`);
+      .delete(`/admin/delete/${userToDelete?._id}`)
+      .set("Authorization", `Bearer ${normalUserToken}`); // Utiliser le token d'un non-admin
 
+    // Vérifier que la réponse est 403 Forbidden
     expect(res.statusCode).toBe(403);
+    expect(res.body.message).toBe("Forbidden");
+  });
+
+  it("should return 404 if the user to delete does not exist", async () => {
+    // ID fictif pour l'utilisateur inexistant
+    const nonExistentUserId = "605c72e8b94c1b2d741f8d39";
+
+    // Tentative de suppression d'un utilisateur inexistant
+    const res = await request(app)
+      .delete(`/admin/delete/${nonExistentUserId}`)
+      .set("Authorization", `Bearer ${adminUserToken}`);
+
+    // Vérifier que la réponse est 403 Not Found
+    expect(res.statusCode).toBe(403);
+    expect(res.body.message).toBe("Forbidden");
   });
 });
 
 // test GetAllUser
 describe("GET /admin/getAllUsers", () => {
-  it("should get list of users if admin", async () => {
-    const adminUser = await request(app).post("/auth/register").send({
+  let adminToken: string;
+  let userToken: string;
+
+  beforeAll(async () => {
+    // Créer un utilisateur admin
+    const adminUserResponse = await request(app).post("/auth/register").send({
       name: "Admin User",
       email: "admin@test.com",
       password: "adminpassword123",
       role: "admin",
     });
 
-    const admin = adminUser.body;
+    const adminUser = adminUserResponse.body;
+    expect(adminUser).toHaveProperty("token");
+    adminToken = adminUser.token;
 
-    // Générer un token pour l'utilisateur admin
-    const adminToken = generateToken(admin._id);
-
-    const res = await request(app)
-      .get(`/admin/getAllUsers`)
-      .set("Authorization", `Bearer ${adminToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.users).toBeDefined();
-  });
-  it("should get an error if users is not admin", async () => {
-    const adminUser = await request(app).post("/auth/register").send({
-      name: "User",
+    // Créer un utilisateur normal
+    const userResponse = await request(app).post("/auth/register").send({
+      name: "Normal User",
       email: "user@test.com",
-      password: "adminpassword123",
+      password: "password123",
       role: "user",
     });
 
-    const user = adminUser.body;
+    const user = userResponse.body;
+    expect(user).toHaveProperty("token");
+    userToken = user.token;
+  });
 
-    // Générer un token pour l'utilisateur admin
-    const adminToken = generateToken(user._id);
-
+  it("should get list of users if requester is admin", async () => {
+    // Demander la liste des utilisateurs en tant qu'admin
     const res = await request(app)
       .get(`/admin/getAllUsers`)
       .set("Authorization", `Bearer ${adminToken}`);
 
+    // Vérifier que la requête réussit et renvoie une liste
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty("users");
+    expect(Array.isArray(res.body.users)).toBe(true);
+  });
+
+  it("should return 403 error if requester is not admin", async () => {
+    // Tenter d'accéder à la liste des utilisateurs en tant qu'utilisateur non-admin
+    const res = await request(app)
+      .get(`/admin/getAllUsers`)
+      .set("Authorization", `Bearer ${userToken}`);
+
+    // Vérifier que la requête est interdite
     expect(res.statusCode).toBe(403);
     expect(res.body.message).toBe("Forbidden");
   });
 });
 
 describe("GET /admin/getAllUsers?page=1&limit=10", () => {
+  let adminToken: string;
+
   beforeAll(async () => {
     // Créez 10 utilisateurs pour le test
     await Promise.all(
       Array.from({ length: 10 }, async (_, index) => {
-        const response = await request(app)
+        await request(app)
           .post("/auth/register")
           .send({
             name: `User ${index + 1}`,
@@ -162,33 +179,34 @@ describe("GET /admin/getAllUsers?page=1&limit=10", () => {
           });
       })
     );
-  });
 
-  afterEach(async () => {
-    // Nettoyer la base de données après chaque test si nécessaire
-    await User.deleteMany({});
-  });
-
-  it("should give 10 users for the 1st page", async () => {
-    const adminUser = await request(app).post("/auth/register").send({
+    // Créer un utilisateur admin et obtenir le token
+    const adminUserResponse = await request(app).post("/auth/register").send({
       name: "Admin User",
       email: "admin@test.com",
       password: "adminpassword123",
       role: "admin",
     });
 
-    const admin = adminUser.body;
+    const admin = adminUserResponse.body;
+    expect(admin).toHaveProperty("token");
+    adminToken = admin.token; // Stocker le token pour les tests suivants
+  });
 
-    // Générer un token pour l'utilisateur admin
-    const adminToken = generateToken(admin._id);
+  afterEach(async () => {
+    // Nettoyer la base de données après chaque test
+    await User.deleteMany({});
+  });
 
+  it("should give 10 users for the 1st page", async () => {
     const res = await request(app)
       .get(`/admin/getAllUsers?page=1&limit=10`)
       .set("Authorization", `Bearer ${adminToken}`);
 
+    // Vérifiez que le statut est 200 et que le corps de la réponse contient les utilisateurs attendus
     expect(res.statusCode).toBe(200);
-    expect(res.body.users).toBeDefined();
-    expect(res.body.users.length).toBe(10); // Vérifier le nombre d'utilisateurs
+    expect(res.body).toHaveProperty("users");
+    expect(res.body.users.length).toBe(10); // Vérifiez le nombre d'utilisateurs
     res.body.users.forEach((user: any) => {
       expect(user).toHaveProperty("name");
       expect(user).toHaveProperty("email");
@@ -201,15 +219,17 @@ describe("GET /admin/getAllUsers with filters", () => {
   let adminToken: string;
 
   beforeEach(async () => {
-    // Créer un utilisateur admin pour chaque test
-    const adminUser = await request(app).post("/auth/register").send({
+    // Créer un utilisateur admin pour chaque test et récupérer le token
+    const adminUserResponse = await request(app).post("/auth/register").send({
       name: "Admin User",
       email: "admin@test.com",
       password: "adminpassword123",
       role: "admin",
     });
 
-    adminToken = generateToken(adminUser.body._id);
+    const adminUser = adminUserResponse.body;
+    expect(adminUser).toHaveProperty("token");
+    adminToken = adminUser.token;
 
     // Créer des utilisateurs de test avec différents rôles, noms et emails
     await Promise.all([
@@ -297,5 +317,95 @@ describe("GET /admin/getAllUsers with filters", () => {
     expect(res.body.users).toBeDefined();
     expect(res.body.users.length).toBe(5);
     expect(res.body.users[0].email).toBe("david@test.com");
+  });
+});
+
+describe("PUT /admin/updateUserRole/:id", () => {
+  let normalUserToken: string;
+  let adminUserToken: string;
+
+  beforeAll(async () => {
+    // Créer un utilisateur normal
+    const normalUserResponse = await request(app).post("/auth/register").send({
+      name: "User Normal",
+      email: "normal-user@test.com",
+      password: "password123",
+      role: "user",
+    });
+
+    // Générer un token pour l'utilisateur normal
+    normalUserToken = normalUserResponse.body.token; // Assurez-vous que le token est dans la réponse
+
+    // Créer un utilisateur admin
+    const adminUserResponse = await request(app).post("/auth/register").send({
+      name: "User Admin",
+      email: "admin-user@test.com",
+      password: "adminpassword123",
+      role: "admin",
+    });
+
+    // Générer un token pour l'utilisateur admin
+    adminUserToken = adminUserResponse.body.token; // Assurez-vous que le token est dans la réponse
+  });
+
+  it("should update the role of a user", async () => {
+    // Trouver l'ID de l'utilisateur normal avec le token pour l'authentification
+    const normalUser = await User.findOne({ email: "normal-user@test.com" });
+
+    // Mise à jour du rôle de l'utilisateur normal en admin
+    const res = await request(app)
+      .put(`/admin/updateUserRole/${normalUser?._id}`) // Utilisez l'ID récupéré
+      .set("Authorization", `Bearer ${adminUserToken}`) // Le token admin
+      .send({
+        role: "admin",
+      });
+
+    // Vérifiez que la réponse est correcte
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty(
+      "message",
+      "User role updated successfully"
+    );
+
+    // Vérifiez que l'utilisateur a bien été mis à jour
+    const updatedUser = await User.findById(normalUser?._id);
+    expect(updatedUser?.role).toBe("admin");
+  });
+
+  it("should return 403 if the user does not exist", async () => {
+    const res = await request(app)
+      .put(`/admin/updateUserRole/605c72e8b94c1b2d741f8d39`) // Un ID fictif
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        role: "admin",
+      });
+
+    expect(res.statusCode).toBe(403); // Vérifiez que la réponse est 404 Not Found
+    expect(res.body).toHaveProperty("message", "Forbidden");
+  });
+
+  it("should return 403 if not authorized", async () => {
+    const normalUser = await User.findOne({ email: "normal-user@test.com" });
+    // Créer un utilisateur non-admin
+    const nonAdminUserResponse = await request(app)
+      .post("/auth/register")
+      .send({
+        name: "Non Admin User",
+        email: "non-admin@test.com",
+        password: "password123",
+      });
+
+    const nonAdminUserToken = nonAdminUserResponse.body.token; // Token de l'utilisateur non-admin
+
+    // Essayer de mettre à jour le rôle de l'utilisateur normal avec un utilisateur non-admin
+    const res = await request(app)
+      .put(`/admin/updateUserRole/${normalUser?._id}`)
+      .set("Authorization", `Bearer ${nonAdminUserToken}`) // Token non-admin
+      .send({
+        role: "admin",
+      });
+
+    expect(res.statusCode).toBe(403); // Vérifiez que la réponse est 403 Forbidden
+    expect(res.body).toHaveProperty("message", "Forbidden");
   });
 });

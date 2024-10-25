@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 // Définition de l'interface User qui étend Document pour Mongoose
 export interface IUser extends Document {
+  token: any;
   _id: string;
   name: string;
   email: string;
