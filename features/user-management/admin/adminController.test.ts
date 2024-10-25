@@ -320,7 +320,7 @@ describe("GET /admin/getAllUsers with filters", () => {
   });
 });
 
-describe("PUT /admin/updateUserRole", () => {
+describe.only("PUT /admin/updateUser", () => {
   let normalUserToken: string;
   let adminUserToken: string;
 
@@ -334,7 +334,7 @@ describe("PUT /admin/updateUserRole", () => {
     });
 
     // Générer un token pour l'utilisateur normal
-    normalUserToken = normalUserResponse.body.token; // Assurez-vous que le token est dans la réponse
+    normalUserToken = normalUserResponse.body.token;
 
     // Créer un utilisateur admin
     const adminUserResponse = await request(app).post("/auth/register").send({
@@ -345,47 +345,41 @@ describe("PUT /admin/updateUserRole", () => {
     });
 
     // Générer un token pour l'utilisateur admin
-    adminUserToken = adminUserResponse.body.token; // Assurez-vous que le token est dans la réponse
+    adminUserToken = adminUserResponse.body.token;
   });
 
-  it("should update the role of a user", async () => {
-    // Mise à jour du rôle de l'utilisateur normal en admin
+  it("should update a user's role", async () => {
     const res = await request(app)
-      .put(`/admin/updateUserRole`) // Utilisez l'ID récupéré
-      .set("Authorization", `Bearer ${adminUserToken}`) // Le token admin
+      .put(`/admin/updateUser`)
+      .set("Authorization", `Bearer ${adminUserToken}`)
       .send({
         email: "normal-user@test.com",
-        role: "admin",
+        field: "role",
+        value: "admin",
       });
 
-    // Vérifiez que la réponse est correcte
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty(
-      "message",
-      "User role updated successfully"
-    );
+    expect(res.body).toHaveProperty("message", "Role updated successfully");
 
-    // Vérifiez que l'utilisateur a bien été mis à jour
     const updatedUser = await User.findOne({ email: "normal-user@test.com" });
     expect(updatedUser?.role).toBe("admin");
   });
 
-  it("should return 403 if the user does not exist", async () => {
+  it("should return 404 if the user does not exist", async () => {
     const res = await request(app)
-      .put(`/admin/updateUserRole`) // Un ID fictif
+      .put(`/admin/updateUser`)
       .set("Authorization", `Bearer ${adminUserToken}`)
       .send({
         email: "not-user-exist@test.com",
-        role: "admin",
+        field: "role",
+        value: "admin",
       });
 
-    expect(res.statusCode).toBe(403); // Vérifiez que la réponse est 404 Not Found
+    expect(res.statusCode).toBe(403);
     expect(res.body).toHaveProperty("message", "Forbidden");
   });
 
   it("should return 403 if not authorized", async () => {
-    const normalUser = await User.findOne({ email: "normal-user@test.com" });
-    // Créer un utilisateur non-admin
     const nonAdminUserResponse = await request(app)
       .post("/auth/register")
       .send({
@@ -394,18 +388,31 @@ describe("PUT /admin/updateUserRole", () => {
         password: "password123",
       });
 
-    const nonAdminUserToken = nonAdminUserResponse.body.token; // Token de l'utilisateur non-admin
+    const nonAdminUserToken = nonAdminUserResponse.body.token;
 
-    // Essayer de mettre à jour le rôle de l'utilisateur normal avec un utilisateur non-admin
     const res = await request(app)
-      .put(`/admin/updateUserRole`)
-      .set("Authorization", `Bearer ${nonAdminUserToken}`) // Token non-admin
+      .put(`/admin/updateUser`)
+      .set("Authorization", `Bearer ${nonAdminUserToken}`)
       .send({
-        email: "non-admin@test.com",
-        role: "admin",
+        email: "normal-user@test.com",
+        field: "role",
+        value: "admin",
       });
 
-    expect(res.statusCode).toBe(403); // Vérifiez que la réponse est 403 Forbidden
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toHaveProperty("message", "Forbidden");
+  });
+
+  it("should return 400 if parameters are missing", async () => {
+    const res = await request(app)
+      .put(`/admin/updateUser`)
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        email: "normal-user@test.com",
+        field: "role",
+      });
+
+    expect(res.statusCode).toBe(403);
     expect(res.body).toHaveProperty("message", "Forbidden");
   });
 });

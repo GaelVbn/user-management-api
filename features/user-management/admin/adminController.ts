@@ -112,22 +112,24 @@ const getAllUsers = async (
   }
 };
 
-const updateUserRole = async (req: Request, res: Response): Promise<void> => {
-  const { email, role } = req.body;
+const updateUser = async (req: Request, res: Response): Promise<void> => {
+  const { email, field, value } = req.body;
 
   // Vérification des paramètres requis
-  if (!email || !role) {
-    res.status(400).json({ message: "Email and role are required" });
+  if (!email || !field || !value) {
+    res.status(400).json({ message: "Email, field, and value are required" });
     return;
   }
 
   try {
-    // Mise à jour du rôle de l'utilisateur par email
-    const user = await User.findOneAndUpdate(
-      { email }, // Critère de recherche
-      { role },
-      { new: true }
-    ).select("-password -_id");
+    // Création d'un objet pour mettre à jour l'utilisateur
+    const updateData: { [key: string]: any } = {};
+    updateData[field] = value;
+
+    // Mise à jour de l'utilisateur par email
+    const user = await User.findOneAndUpdate({ email }, updateData, {
+      new: true,
+    }).select("-password -_id");
 
     // Vérifier si l'utilisateur a été trouvé et mis à jour
     if (!user) {
@@ -137,15 +139,15 @@ const updateUserRole = async (req: Request, res: Response): Promise<void> => {
 
     // Répondre avec succès
     res.status(200).json({
-      message: "User role updated successfully",
+      message: `${
+        field.charAt(0).toUpperCase() + field.slice(1)
+      } updated successfully`,
       user: user,
     });
-    return;
   } catch (err) {
-    console.error("Error updating user role:", err); // Log d'erreur pour le débogage
+    console.error("Error updating user:", err); // Log d'erreur pour le débogage
     res.status(500).json({ message: "Server error" });
-    return;
   }
 };
 
-export { deleteUser, getAllUsers, updateUserRole };
+export { deleteUser, getAllUsers, updateUser };
