@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser } from "./authController";
+import { registerUser, loginUser, verifyEmail } from "./authController";
 import {
   validateRegister,
   validateLogin,
@@ -11,6 +11,9 @@ const router = express.Router();
 
 // Route pour enregistrer un nouvel utilisateur
 router.post("/register", sanitizeMiddleware, validateRegister, registerUser);
+
+// Route pour vérifier l'email
+router.get("/verify-email", verifyEmail);
 
 // Route pour connecter un utilisateur
 router.post(
