@@ -1,5 +1,10 @@
 import express from "express";
-import { deleteUser, getAllUsers, updateUser } from "./adminController";
+import {
+  deleteUser,
+  getAllUsers,
+  updateUser,
+  adminResetPassword,
+} from "./adminController";
 import { protect } from "../../../middlewares/Auth/authMiddleware";
 import sanitizeMiddleware from "../../../middlewares/Global/sanitizeMiddleware";
 import authRole from "../../../middlewares/Admin/authRoleMiddleware";
@@ -31,6 +36,15 @@ router.put(
   authRole("admin"),
   sanitizeMiddleware,
   updateUser
+);
+
+// Route permet d'envoyer un mail de réinitialisation du mot de passe utilisateur sur son nouveau mail
+router.post(
+  "/admin-Reset-Password",
+  protect,
+  authRole("admin"),
+  sanitizeMiddleware,
+  adminResetPassword
 );
 
 export default router; // Utilisation de l'export par défaut

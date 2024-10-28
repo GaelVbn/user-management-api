@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import User from "../../../models/UserModel";
+import {
+  generateMailToken,
+  sendPasswordResetEmail,
+} from "../../../services/emailService";
 
 // DELETE A USER
 const deleteUser = async (req: Request, res: Response): Promise<void> => {
@@ -150,4 +154,32 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export { deleteUser, getAllUsers, updateUser };
+// Reinitaliser le password d'un utilisateur sur son nouveau mail accessible
+const adminResetPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { email, newEmail } = req.body;
+
+  // Vérifiez si l'utilisateur existe
+  const user = await User.findOne({ email });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  // Générer un token de réinitialisation
+  const resetToken = generateMailToken();
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 heure d'expiration
+  await user.save();
+
+  // Envoyer l'email de réinitialisation
+  await sendPasswordResetEmail(newEmail, resetToken);
+
+  res
+    .status(200)
+    .json({ message: "Password reset email sent to the new email" });
+};
+
+export { deleteUser, getAllUsers, updateUser, adminResetPassword };
