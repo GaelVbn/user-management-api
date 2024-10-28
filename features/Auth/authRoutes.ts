@@ -1,5 +1,11 @@
 import express from "express";
-import { registerUser, loginUser, verifyEmail } from "./authController";
+import {
+  registerUser,
+  loginUser,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+} from "./authController";
 import {
   validateRegister,
   validateLogin,
@@ -23,5 +29,11 @@ router.post(
   validateLogin,
   loginUser
 );
+
+// route pour mot de passe oublié
+router.post("/forgot-password", forgotPassword);
+
+// route pour réinitialiser le mot de passe
+router.put("/reset-password", resetPassword);
 
 export default router; // Utilisation de l'export par défaut

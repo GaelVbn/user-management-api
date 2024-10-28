@@ -20,6 +20,7 @@ declare global {
 
 // Middleware
 app.use(express.json()); // Pour traiter les JSON
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/auth", require("./features/Auth/authRoutes").default); // Ajouter .default pour le module ES

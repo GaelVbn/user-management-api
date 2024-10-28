@@ -1,4 +1,5 @@
 import User, { IUser, matchPassword } from "../../models/UserModel"; // Utiliser l'importation ES6
+import crypto from "crypto";
 import jwt from "jsonwebtoken"; // Importation ES6
 import bcrypt from "bcryptjs"; // Importation ES6
 import { Request, Response } from "express"; // Importation des types Request et Response
@@ -6,6 +7,7 @@ import nodemailer from "nodemailer";
 import {
   generateMailToken,
   sendVerificationEmail,
+  sendPasswordResetEmail,
 } from "../../services/emailService";
 import dotenv from "dotenv";
 dotenv.config();
@@ -133,4 +135,69 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export { registerUser, loginUser, generateToken, verifyEmail }; // Exportation des fonctions
+// mot de passe oublié
+const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+
+  // Vérifiez si l'utilisateur existe
+  const user = await User.findOne({ email });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  // Générer un token de réinitialisation
+  const resetToken = generateMailToken();
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 heure d'expiration
+  await user.save();
+
+  // Utiliser le service d'email pour envoyer l'email de réinitialisation
+  try {
+    await sendPasswordResetEmail(email, resetToken);
+    res.status(200).json({ message: "Password reset email sent" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ message: "Failed to send password reset email" });
+  }
+};
+
+const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  const { token, email, newPassword } = req.body;
+
+  // Vérifiez que tous les paramètres sont fournis
+  if (!token || !email || !newPassword) {
+    res
+      .status(400)
+      .json({ message: "Token, email and new password are required." });
+    return;
+  }
+
+  // Trouvez l'utilisateur à partir de l'email
+  const user = await User.findOne({
+    email,
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    res.status(400).json({ message: "Invalid or expired token" });
+    return;
+  }
+
+  // Mettre à jour le mot de passe
+  user.password = newPassword;
+  user.resetPasswordToken = undefined; // Invalider le token après utilisation
+  user.resetPasswordExpires = undefined; // Invalider l'expiration
+  await user.save();
+
+  res.status(200).json({ message: "Password has been reset successfully." });
+};
+
+export {
+  registerUser,
+  loginUser,
+  generateToken,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+}; // Exportation des fonctions
