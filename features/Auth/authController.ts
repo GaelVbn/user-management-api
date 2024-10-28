@@ -2,8 +2,11 @@ import User, { IUser, matchPassword } from "../../models/UserModel"; // Utiliser
 import jwt from "jsonwebtoken"; // Importation ES6
 import bcrypt from "bcryptjs"; // Importation ES6
 import { Request, Response } from "express"; // Importation des types Request et Response
-import crypto from "crypto";
 import nodemailer from "nodemailer";
+import {
+  generateMailToken,
+  sendVerificationEmail,
+} from "../../services/emailService";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -12,33 +15,6 @@ function generateToken(id: string): string {
   // Typage du paramètre et du retour
   return jwt.sign({ id }, process.env.JWT_SECRET!, { expiresIn: "1h" });
 }
-
-// Générer un mailToken
-const generateMailToken = () => crypto.randomBytes(32).toString("hex");
-
-// Fonction pour envoyer un email de vérification
-const sendVerificationEmail = async (email: string, token: string) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  const verificationLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${token}&email=${email}`;
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Please verify your email",
-    html: `<p>Click on the following link to verify your email: <a href="${verificationLink}">${verificationLink}</a></p>`,
-  };
-
-  await transporter.sendMail(mailOptions);
-};
 
 const registerUser = async (req: Request, res: Response): Promise<void> => {
   // Typage des paramètres

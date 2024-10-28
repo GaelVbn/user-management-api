@@ -1,4 +1,5 @@
 import User, { IUser, matchPassword } from "../../../models/UserModel"; // Utiliser l'importation ES6
+import { sendPasswordChangeConfirmation } from "../../../services/emailService";
 import { Request, Response } from "express"; // Importation des types Request et Response
 
 // Typage de la fonction en tant que RequestHandler
@@ -53,6 +54,9 @@ const updatePassword = async (req: Request, res: Response): Promise<void> => {
   // Mettre à jour le mot de passe
   user.password = newPassword; // Assurez-vous que vous avez une méthode pour cela
   await user.save();
+
+  // Envoyer un email de confirmation de changement de mot de passe
+  await sendPasswordChangeConfirmation(user.email);
 
   res.status(200).json({ message: "Password updated successfully" });
   return;

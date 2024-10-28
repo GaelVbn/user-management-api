@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { generateToken } from "./authController";
 import User from "../../models/UserModel"; // Assurez-vous que le modèle User est bien typé
 import { MongoMemoryServer } from "mongodb-memory-server";
+import { App } from "supertest/types";
 
 dotenv.config();
 
