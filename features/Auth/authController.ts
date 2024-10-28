@@ -11,9 +11,13 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Générer un token JWT
-function generateToken(id: string): string {
+function generateToken(id: string, user: IUser): string {
   // Typage du paramètre et du retour
-  return jwt.sign({ id }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+  return jwt.sign(
+    { id, tokenVersion: user.tokenVersion },
+    process.env.JWT_SECRET!,
+    { expiresIn: "1h" }
+  );
 }
 
 const registerUser = async (req: Request, res: Response): Promise<void> => {
@@ -67,7 +71,7 @@ const registerUser = async (req: Request, res: Response): Promise<void> => {
       name: user.name,
       email: user.email,
       message: "User registered. Please verify your email.",
-      token: generateToken(user._id.toString()), // Convertir en chaîne de caractères
+      token: generateToken(user._id.toString(), user), // Convertir en chaîne de caractères
     });
     return;
   } else {
@@ -120,7 +124,7 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       name: user.name,
       email: user.email,
-      token: generateToken(user._id.toString()), // Convertir en chaîne de caractères
+      token: generateToken(user._id.toString(), user), // Convertir en chaîne de caractères
     });
     return;
   } else {

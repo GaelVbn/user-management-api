@@ -53,6 +53,7 @@ const updatePassword = async (req: Request, res: Response): Promise<void> => {
 
   // Mettre à jour le mot de passe
   user.password = newPassword; // Assurez-vous que vous avez une méthode pour cela
+  user.tokenVersion += 1;
   await user.save();
 
   // Envoyer un email de confirmation de changement de mot de passe

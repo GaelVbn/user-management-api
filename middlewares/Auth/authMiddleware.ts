@@ -2,10 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import User, { IUser } from "../../models/UserModel";
 
-const protect = async (req: Request, res: Response, next: NextFunction) => {
+const protect = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   let token: string | undefined;
 
-  // Vérification de l'autorisation dans l'en-tête de la requête
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
@@ -13,14 +16,19 @@ const protect = async (req: Request, res: Response, next: NextFunction) => {
     try {
       token = req.headers.authorization.split(" ")[1];
 
-      // Décoder le token
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
         id: string;
+        tokenVersion: number;
       };
 
-      // Récupérer l'utilisateur du token
-      req.user = (await User.findById(decoded.id).select("-password")) as IUser;
+      const user = await User.findById(decoded.id).select("-password");
 
+      if (!user || user.tokenVersion !== decoded.tokenVersion) {
+        res.status(401).json({ message: "Token is not valid or has expired" });
+        return;
+      }
+
+      req.user = user as IUser;
       next();
     } catch (error) {
       res.status(401).json({ message: "Token is not valid" });
