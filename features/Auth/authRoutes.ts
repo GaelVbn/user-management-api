@@ -12,6 +12,7 @@ import {
 } from "../../middlewares/Auth/validationMiddleware";
 import sanitizeMiddleware from "../../middlewares/Global/sanitizeMiddleware";
 import loginLimiter from "../../middlewares/Auth/loginLimiterMiddleware";
+import { morganMiddleware } from "../../middlewares/Global/logger";
 
 const router = express.Router();
 
@@ -31,9 +32,9 @@ router.post(
 );
 
 // route pour mot de passe oublié
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", morganMiddleware, forgotPassword);
 
 // route pour réinitialiser le mot de passe
-router.put("/reset-password", resetPassword);
+router.put("/reset-password", morganMiddleware, resetPassword);
 
 export default router; // Utilisation de l'export par défaut
