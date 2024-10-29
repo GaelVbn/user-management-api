@@ -1,5 +1,9 @@
 import User, { IUser, matchPassword } from "../../../models/UserModel"; // Utiliser l'importation ES6
-import { sendPasswordChangeConfirmation } from "../../../services/emailService";
+import {
+  generateMailToken,
+  sendNewEmailVerification,
+  sendPasswordChangeConfirmation,
+} from "../../../services/emailService";
 import { Request, Response } from "express"; // Importation des types Request et Response
 
 // Typage de la fonction en tant que RequestHandler
@@ -91,4 +95,58 @@ const updateName = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export { getUserProfile, updatePassword, updateName };
+const changeEmail = async (req: Request, res: Response): Promise<void> => {
+  const { newEmail } = req.body;
+
+  // Vérifiez que l'utilisateur est authentifié
+  const user = req.user ?? ({} as IUser);
+
+  // Vérifiez si l'e-mail est déjà pris
+  const emailExists = await User.findOne({ email: newEmail });
+  if (emailExists) {
+    res.status(400).json({ message: "Email already in use" });
+    return;
+  }
+
+  // Générer un token de validation
+  const newEmailToken = generateMailToken();
+  user.newEmail = newEmail;
+  user.newEmailToken = newEmailToken;
+  user.newEmailVerified = false; // À valider par l'utilisateur
+  await user.save();
+
+  // Envoyer l'e-mail de validation
+  sendNewEmailVerification(newEmail, newEmailToken);
+
+  res
+    .status(200)
+    .json({ message: "Verification email sent to new email address" });
+};
+
+const verifyNewEmail = async (req: Request, res: Response): Promise<void> => {
+  const { token, email } = req.query;
+
+  // Trouver l'utilisateur avec la nouvelle adresse e-mail et le token
+  const user = await User.findOne({ newEmail: email, newEmailToken: token });
+  if (!user) {
+    res.status(400).json({ message: "Invalid or expired token" });
+    return;
+  }
+
+  // Valider la nouvelle adresse e-mail
+  user.email = user.newEmail ?? user.email; // Mettez à jour l'adresse e-mail principale
+  user.newEmail = null; // Supprimez l'ancienne adresse e-mail
+  user.newEmailToken = null; // Supprimez le token de validation
+  user.newEmailVerified = true; // Indique que l'e-mail a été vérifié
+  await user.save();
+
+  res.status(200).json({ message: "Email address updated successfully" });
+};
+
+export {
+  getUserProfile,
+  updatePassword,
+  updateName,
+  changeEmail,
+  verifyNewEmail,
+};

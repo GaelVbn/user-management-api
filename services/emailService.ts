@@ -51,9 +51,20 @@ const sendPasswordResetEmail = async (email: string, token: string) => {
   await sendEmail(email, "Password Reset Request", htmlContent);
 };
 
+// Fonction pour envoyer un email de changement d'email sur une nouvelle adresse email
+const sendNewEmailVerification = async (
+  newEmail: string,
+  newEmailToken: string
+) => {
+  const verificationLink = `${process.env.FRONTEND_URL}/auth/verify-new-email?token=${newEmailToken}&email=${newEmail}`;
+  const htmlContent = `<p>Click <a href="${verificationLink}">here</a> to verify your new email address.</p>`;
+  await sendEmail(newEmail, "Verify your new email", htmlContent);
+};
+
 export {
   generateMailToken,
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendPasswordChangeConfirmation,
+  sendNewEmailVerification,
 };
