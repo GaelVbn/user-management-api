@@ -24,6 +24,6 @@ router.put("/updateName", protect, sanitizeMiddleware, updateName);
 router.put("/change-email", protect, sanitizeMiddleware, changeEmail);
 
 // Route pour verifier la nouvelle adresse mail
-router.get("/verify-new-email", sanitizeMiddleware, verifyNewEmail);
+router.post("/verify-new-email", sanitizeMiddleware, verifyNewEmail);
 
 export default router; // Utilisation de l'export par défaut

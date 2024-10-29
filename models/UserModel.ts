@@ -10,6 +10,7 @@ export interface IUser extends Document {
   newEmail: string | null;
   newEmailToken: string | null;
   newEmailVerified: boolean;
+  newEmailTokenExpires: Date | null;
   password: string;
   role: string; // Ajoute les rôles, par exemple : "user" | "admin"
   isVerified: boolean;
@@ -38,7 +39,9 @@ const userSchema: Schema<IUser> = new Schema(
     },
     newEmailVerified: {
       type: Boolean,
+      default: false,
     },
+    newEmailTokenExpires: { type: Date },
     password: {
       type: String,
       required: true,

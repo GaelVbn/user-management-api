@@ -113,6 +113,7 @@ const changeEmail = async (req: Request, res: Response): Promise<void> => {
   user.newEmail = newEmail;
   user.newEmailToken = newEmailToken;
   user.newEmailVerified = false; // À valider par l'utilisateur
+  user.newEmailTokenExpires = new Date(Date.now() + 3600000); // Expires in 1 hour
   await user.save();
 
   // Envoyer l'e-mail de validation
@@ -126,21 +127,38 @@ const changeEmail = async (req: Request, res: Response): Promise<void> => {
 const verifyNewEmail = async (req: Request, res: Response): Promise<void> => {
   const { token, email } = req.query;
 
-  // Trouver l'utilisateur avec la nouvelle adresse e-mail et le token
-  const user = await User.findOne({ newEmail: email, newEmailToken: token });
-  if (!user) {
-    res.status(400).json({ message: "Invalid or expired token" });
+  // Vérification de la présence du token et de l'email
+  if (!token || !email) {
+    res.status(400).json({ message: "Token and email are required." });
     return;
   }
 
-  // Valider la nouvelle adresse e-mail
-  user.email = user.newEmail ?? user.email; // Mettez à jour l'adresse e-mail principale
-  user.newEmail = null; // Supprimez l'ancienne adresse e-mail
-  user.newEmailToken = null; // Supprimez le token de validation
-  user.newEmailVerified = true; // Indique que l'e-mail a été vérifié
-  await user.save();
+  try {
+    // Trouver l'utilisateur avec la nouvelle adresse e-mail et le token
+    const user = await User.findOne({
+      newEmail: email,
+      newEmailToken: token,
+      newEmailTokenExpires: { $gt: new Date() },
+    });
 
-  res.status(200).json({ message: "Email address updated successfully" });
+    if (!user) {
+      res.status(400).json({ message: "Invalid or expired token." });
+      return;
+    }
+
+    // Valider la nouvelle adresse e-mail
+    user.email = user.newEmail ?? user.email; // Met à jour l'adresse e-mail principale
+    user.newEmail = null; // Supprime la nouvelle adresse e-mail temporaire
+    user.newEmailToken = null; // Supprime le token de validation
+    user.newEmailTokenExpires = null; // Supprime l'expiration du token
+    user.newEmailVerified = true; // Indique que l'e-mail a été vérifié
+    await user.save();
+
+    res.status(200).json({ message: "Email update confirmed successfully." });
+  } catch (error) {
+    console.error("Error verifying new email:", error);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
 };
 
 export {

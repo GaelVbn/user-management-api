@@ -4,6 +4,7 @@ import {
   getAllUsers,
   updateUser,
   adminResetPassword,
+  adminResetEmail,
 } from "./adminController";
 import { protect } from "../../../middlewares/Auth/authMiddleware";
 import sanitizeMiddleware from "../../../middlewares/Global/sanitizeMiddleware";
@@ -45,6 +46,15 @@ router.post(
   authRole("admin"),
   sanitizeMiddleware,
   adminResetPassword
+);
+
+// Route pour demander un changement d'email
+router.put(
+  "/admin-reset-email",
+  protect,
+  authRole("admin"),
+  sanitizeMiddleware,
+  adminResetEmail
 );
 
 export default router; // Utilisation de l'export par défaut

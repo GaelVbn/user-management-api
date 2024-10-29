@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../../../models/UserModel";
 import {
   generateMailToken,
+  sendNewEmailVerification,
   sendPasswordResetEmail,
 } from "../../../services/emailService";
 
@@ -182,4 +183,41 @@ const adminResetPassword = async (
     .json({ message: "Password reset email sent to the new email" });
 };
 
-export { deleteUser, getAllUsers, updateUser, adminResetPassword };
+const adminResetEmail = async (req: Request, res: Response): Promise<void> => {
+  const { email, newEmail } = req.body;
+
+  // Vérifiez si l'utilisateur existe
+  const user = await User.findOne({ email });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  // Vérifiez si l'e-mail est déjà pris
+  const emailExists = await User.findOne({ email: newEmail });
+  if (emailExists) {
+    res.status(400).json({ message: "Email already in use" });
+    return;
+  }
+
+  const newEmailToken = generateMailToken();
+  user.newEmail = newEmail;
+  user.newEmailToken = newEmailToken;
+  user.newEmailVerified = false;
+  user.newEmailTokenExpires = new Date(Date.now() + 3600000); // Expires in 1 hour
+  await user.save();
+
+  await sendNewEmailVerification(newEmail, newEmailToken);
+
+  res
+    .status(200)
+    .json({ message: "Email verification sent to the new email address" });
+};
+
+export {
+  deleteUser,
+  getAllUsers,
+  updateUser,
+  adminResetPassword,
+  adminResetEmail,
+};
