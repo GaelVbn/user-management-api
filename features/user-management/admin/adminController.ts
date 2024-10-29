@@ -1,35 +1,34 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import User from "../../../models/UserModel";
 import {
   generateMailToken,
   sendNewEmailVerification,
   sendPasswordResetEmail,
 } from "../../../services/emailService";
+import AppError from "../../../utils/appError";
 
-// DELETE A USER
-const deleteUser = async (req: Request, res: Response): Promise<void> => {
-  // Typage des paramètres de la fonction
-  const { email } = req.body; // Récupérer l'email de l'utilisateur à supprimer
+const deleteUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { email } = req.body;
 
   if (!email) {
-    res.status(400).json({ message: "Email is required" });
-    return;
+    return next(new AppError("Email is required", 400));
   }
 
   try {
-    const user = await User.findOneAndDelete(email); // Supprimer l'utilisateur
+    const user = await User.findOneAndDelete({ email });
 
     if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return; // Assurer que la fonction se termine après avoir envoyé une réponse
+      return next(new AppError("User not found", 404));
     }
 
     res.status(200).json({ message: "User deleted successfully" });
-    return;
   } catch (error) {
-    console.error("Error deleting user:", error); // Ajout d'un log d'erreur pour le débogage
-    res.status(500).json({ message: "Server error" });
-    return;
+    console.error("Error deleting user:", error);
+    next(new AppError("Server error while deleting user", 500));
   }
 };
 
@@ -46,7 +45,8 @@ interface GetAllUsersQuery {
 // Get All Users + Pagination and Filters
 const getAllUsers = async (
   req: Request<{}, {}, {}, GetAllUsersQuery>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const {
@@ -92,14 +92,7 @@ const getAllUsers = async (
 
     // Si aucun utilisateur n'est trouvé sur la page demandée
     if (users.length === 0) {
-      res.status(404).json({
-        message: "No users found on this page",
-        users: [],
-        totalUsers,
-        totalPages,
-        currentPage: pageNumber,
-      });
-      return; // On retourne `void`, ce `return` arrête juste l'exécution
+      return next(new AppError("No users found on this page", 404));
     }
 
     // Réponse en cas de succès
@@ -109,21 +102,21 @@ const getAllUsers = async (
       totalPages,
       currentPage: pageNumber,
     });
-    return; // Même ici pour stopper après avoir envoyé la réponse
-  } catch (err) {
-    console.error("Error fetching users:", err);
-    res.status(500).json({ message: "Server error" });
-    return; // Idem en cas d'erreur
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    next(new AppError("Server error while fetching users", 500));
   }
 };
 
-const updateUser = async (req: Request, res: Response): Promise<void> => {
+const updateUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { email, field, value } = req.body;
 
-  // Vérification des paramètres requis
   if (!email || !field || !value) {
-    res.status(400).json({ message: "Email, field, and value are required" });
-    return;
+    return next(new AppError("Email, field, and value are required", 400));
   }
 
   try {
@@ -138,8 +131,7 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
 
     // Vérifier si l'utilisateur a été trouvé et mis à jour
     if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
+      return next(new AppError("User not found", 404));
     }
 
     // Répondre avec succès
@@ -147,71 +139,82 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
       message: `${
         field.charAt(0).toUpperCase() + field.slice(1)
       } updated successfully`,
-      user: user,
+      user,
     });
   } catch (err) {
-    console.error("Error updating user:", err); // Log d'erreur pour le débogage
-    res.status(500).json({ message: "Server error" });
+    console.error("Error updating user:", err);
+    return next(new AppError("Server error while updating user", 500));
   }
 };
 
-// Reinitaliser le password d'un utilisateur sur son nouveau mail accessible
 const adminResetPassword = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   const { email, newEmail } = req.body;
 
-  // Vérifiez si l'utilisateur existe
-  const user = await User.findOne({ email });
-  if (!user) {
-    res.status(404).json({ message: "User not found" });
-    return;
+  try {
+    // Vérifiez si l'utilisateur existe
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    // Générer un token de réinitialisation
+    const resetToken = generateMailToken();
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 heure d'expiration
+    await user.save();
+
+    // Envoyer l'email de réinitialisation
+    await sendPasswordResetEmail(newEmail, resetToken);
+
+    res
+      .status(200)
+      .json({ message: "Password reset email sent to the new email" });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    return next(new AppError("Server error while resetting password", 500));
   }
-
-  // Générer un token de réinitialisation
-  const resetToken = generateMailToken();
-  user.resetPasswordToken = resetToken;
-  user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 heure d'expiration
-  await user.save();
-
-  // Envoyer l'email de réinitialisation
-  await sendPasswordResetEmail(newEmail, resetToken);
-
-  res
-    .status(200)
-    .json({ message: "Password reset email sent to the new email" });
 };
 
-const adminResetEmail = async (req: Request, res: Response): Promise<void> => {
+const adminResetEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { email, newEmail } = req.body;
 
-  // Vérifiez si l'utilisateur existe
-  const user = await User.findOne({ email });
-  if (!user) {
-    res.status(404).json({ message: "User not found" });
-    return;
+  try {
+    // Vérifiez si l'utilisateur existe
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    // Vérifiez si l'e-mail est déjà pris
+    const emailExists = await User.findOne({ email: newEmail });
+    if (emailExists) {
+      return next(new AppError("Email already in use", 400));
+    }
+
+    const newEmailToken = generateMailToken();
+    user.newEmail = newEmail;
+    user.newEmailToken = newEmailToken;
+    user.newEmailVerified = false;
+    user.newEmailTokenExpires = new Date(Date.now() + 3600000); // Expiration dans 1 heure
+    await user.save();
+
+    await sendNewEmailVerification(newEmail, newEmailToken);
+
+    res
+      .status(200)
+      .json({ message: "Email verification sent to the new email address" });
+  } catch (error) {
+    console.error("Error resetting email:", error);
+    return next(new AppError("Server error while resetting email", 500));
   }
-
-  // Vérifiez si l'e-mail est déjà pris
-  const emailExists = await User.findOne({ email: newEmail });
-  if (emailExists) {
-    res.status(400).json({ message: "Email already in use" });
-    return;
-  }
-
-  const newEmailToken = generateMailToken();
-  user.newEmail = newEmail;
-  user.newEmailToken = newEmailToken;
-  user.newEmailVerified = false;
-  user.newEmailTokenExpires = new Date(Date.now() + 3600000); // Expires in 1 hour
-  await user.save();
-
-  await sendNewEmailVerification(newEmail, newEmailToken);
-
-  res
-    .status(200)
-    .json({ message: "Email verification sent to the new email address" });
 };
 
 export {

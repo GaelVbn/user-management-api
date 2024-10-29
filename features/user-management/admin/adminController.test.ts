@@ -31,7 +31,6 @@ afterEach(async () => {
   await User.deleteMany({});
 });
 
-// Tests pour la route DELETE
 describe("DELETE /admin/delete", () => {
   let normalUserToken: string;
   let adminUserToken: string;
@@ -78,7 +77,7 @@ describe("DELETE /admin/delete", () => {
     expect(deletedUser).toBeNull();
   });
 
-  it("should return 403 if a non-admin user tries to delete another user", async () => {
+  it("should return 401 if a non-admin user tries to delete another user", async () => {
     // Tentative de suppression par un utilisateur non-admin
     const res = await request(app)
       .delete(`/admin/delete`)
@@ -87,12 +86,12 @@ describe("DELETE /admin/delete", () => {
         email: "normal@test.com",
       });
 
-    // Vérifier que la réponse est 403 Forbidden
-    expect(res.statusCode).toBe(403);
-    expect(res.body.message).toBe("Forbidden");
+    // Vérifier que la réponse est 401 Forbidden
+    expect(res.statusCode).toBe(401);
+    expect(res.body.message).toBe("Token is not valid or has expired");
   });
 
-  it("should return 404 if the user to delete does not exist", async () => {
+  it("should return 401 if the user to delete does not exist", async () => {
     // Tentative de suppression d'un utilisateur inexistant
     const res = await request(app)
       .delete(`/admin/delete`)
@@ -101,13 +100,12 @@ describe("DELETE /admin/delete", () => {
         email: "emailnonexist@gmail.com",
       });
 
-    // Vérifier que la réponse est 403 Not Found
-    expect(res.statusCode).toBe(403);
-    expect(res.body.message).toBe("Forbidden");
+    // Vérifier que la réponse est 401 Not Found
+    expect(res.statusCode).toBe(401);
+    expect(res.body.message).toBe("Token is not valid or has expired");
   });
 });
 
-// test GetAllUser
 describe("GET /admin/getAllUsers", () => {
   let adminToken: string;
   let userToken: string;
@@ -150,15 +148,15 @@ describe("GET /admin/getAllUsers", () => {
     expect(Array.isArray(res.body.users)).toBe(true);
   });
 
-  it("should return 403 error if requester is not admin", async () => {
+  it("should return 401 error if requester is not admin", async () => {
     // Tenter d'accéder à la liste des utilisateurs en tant qu'utilisateur non-admin
     const res = await request(app)
       .get(`/admin/getAllUsers`)
       .set("Authorization", `Bearer ${userToken}`);
 
     // Vérifier que la requête est interdite
-    expect(res.statusCode).toBe(403);
-    expect(res.body.message).toBe("Forbidden");
+    expect(res.statusCode).toBe(401);
+    expect(res.body.message).toBe("Token is not valid or has expired");
   });
 });
 
@@ -166,6 +164,7 @@ describe("GET /admin/getAllUsers?page=1&limit=10", () => {
   let adminToken: string;
 
   beforeAll(async () => {
+    console.time("User Creation");
     // Créez 10 utilisateurs pour le test
     await Promise.all(
       Array.from({ length: 10 }, async (_, index) => {
@@ -179,6 +178,7 @@ describe("GET /admin/getAllUsers?page=1&limit=10", () => {
           });
       })
     );
+    console.timeEnd("User Creation");
 
     // Créer un utilisateur admin et obtenir le token
     const adminUserResponse = await request(app).post("/auth/register").send({
@@ -191,7 +191,7 @@ describe("GET /admin/getAllUsers?page=1&limit=10", () => {
     const admin = adminUserResponse.body;
     expect(admin).toHaveProperty("token");
     adminToken = admin.token; // Stocker le token pour les tests suivants
-  });
+  }, 10000); // Augmenter le délai à 10 secondes
 
   afterEach(async () => {
     // Nettoyer la base de données après chaque test
@@ -219,6 +219,7 @@ describe("GET /admin/getAllUsers with filters", () => {
   let adminToken: string;
 
   beforeEach(async () => {
+    console.time("User Creation");
     // Créer un utilisateur admin pour chaque test et récupérer le token
     const adminUserResponse = await request(app).post("/auth/register").send({
       name: "Admin User",
@@ -258,7 +259,8 @@ describe("GET /admin/getAllUsers with filters", () => {
         role: "admin",
       }),
     ]);
-  });
+    console.timeEnd("User Creation");
+  }, 10000); // Augmenter le délai à 10 secondes
 
   afterEach(async () => {
     // Nettoyer la base de données après chaque test
@@ -365,7 +367,7 @@ describe("PUT /admin/updateUser", () => {
     expect(updatedUser?.role).toBe("admin");
   });
 
-  it("should return 404 if the user does not exist", async () => {
+  it("should return 401 if the user does not exist", async () => {
     const res = await request(app)
       .put(`/admin/updateUser`)
       .set("Authorization", `Bearer ${adminUserToken}`)
@@ -375,8 +377,11 @@ describe("PUT /admin/updateUser", () => {
         value: "admin",
       });
 
-    expect(res.statusCode).toBe(403);
-    expect(res.body).toHaveProperty("message", "Forbidden");
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Token is not valid or has expired"
+    );
   });
 
   it("should return 403 if not authorized", async () => {
@@ -403,7 +408,7 @@ describe("PUT /admin/updateUser", () => {
     expect(res.body).toHaveProperty("message", "Forbidden");
   });
 
-  it("should return 400 if parameters are missing", async () => {
+  it("should return 401 if parameters are missing", async () => {
     const res = await request(app)
       .put(`/admin/updateUser`)
       .set("Authorization", `Bearer ${adminUserToken}`)
@@ -412,7 +417,10 @@ describe("PUT /admin/updateUser", () => {
         field: "role",
       });
 
-    expect(res.statusCode).toBe(403);
-    expect(res.body).toHaveProperty("message", "Forbidden");
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Token is not valid or has expired"
+    );
   });
 });

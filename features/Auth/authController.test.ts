@@ -32,8 +32,7 @@ beforeEach(async () => {
 
 jest.setTimeout(10000);
 
-// Test de la route d'inscription
-describe("POST /users/register", () => {
+describe("POST /auth/register", () => {
   it("should register a new user", async () => {
     const res = await request(app).post("/auth/register").send({
       name: "Test User",
@@ -87,8 +86,7 @@ describe("POST /users/register", () => {
   });
 });
 
-// Test de la route login
-describe("POST /users/login", () => {
+describe("POST /auth/login", () => {
   beforeEach(async () => {
     await request(app).post("/auth/register").send({
       name: "Test User",

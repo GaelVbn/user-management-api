@@ -1,7 +1,8 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import connectDB from "./config/database"; // Assurez-vous que le fichier de configuration est également converti en TS
-import dotenv from "dotenv";
 import { IUser } from "./models/UserModel"; // Assurez-vous que le modèle User est bien typé
+import errorMiddleware from "./middlewares/Global/errorMiddleware";
+import dotenv from "dotenv";
 dotenv.config();
 
 // Connect to MongoDB
@@ -32,6 +33,10 @@ app.use(
   "/admin",
   require("./features/user-management/admin/adminRoutes").default
 ); // Ajouter .default pour le module ES
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  errorMiddleware(err, req, res, next);
+});
 
 const PORT = process.env.PORT || 3001;
 

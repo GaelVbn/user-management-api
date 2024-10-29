@@ -4,32 +4,42 @@ import {
   sendNewEmailVerification,
   sendPasswordChangeConfirmation,
 } from "../../../services/emailService";
-import { Request, Response } from "express"; // Importation des types Request et Response
+import { NextFunction, Request, Response } from "express";
+import AppError from "../../../utils/appError";
 
-// Typage de la fonction en tant que RequestHandler
-const getUserProfile = async (req: Request, res: Response): Promise<void> => {
+const getUserProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   // Vérifiez d'abord si req.user est défini
   if (!req.user) {
-    res.status(401).json({ message: "User not authenticated" });
-    return; // Sortir pour ne pas continuer à exécuter le code
+    return next(new AppError("User not authenticated", 401));
   }
 
-  const user = await User.findById(req.user.id); // Assurez-vous que req.user.id existe
+  try {
+    const user = await User.findById(req.user.id);
 
-  if (user) {
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
     res.status(200).json({
       name: user.name,
       email: user.email,
       role: user.role,
     });
-    return;
-  } else {
-    res.status(404).json({ message: "User not found" });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    return next(new AppError("Server error while fetching user profile", 500));
   }
 };
 
-// UPDATE PASSWORD
-const updatePassword = async (req: Request, res: Response): Promise<void> => {
+const updatePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   // Typage des paramètres
   const {
     oldPassword,
@@ -38,41 +48,46 @@ const updatePassword = async (req: Request, res: Response): Promise<void> => {
 
   // Assurez-vous que les mots de passe sont fournis
   if (!oldPassword || !newPassword) {
-    res.status(400).json({ message: "Both passwords are required" });
-    return;
+    return next(new AppError("Both passwords are required", 400)); // Utilisation de la classe d'erreur personnalisée
   }
 
-  // Trouver l'utilisateur à partir du token
-  const user = await User.findById(req.user?.id); // Assurez-vous que req.user.id existe
-  if (!user) {
-    res.status(404).json({ message: "User not found" });
-    return;
+  try {
+    // Trouver l'utilisateur à partir du token
+    const user = await User.findById(req.user?.id); // Assurez-vous que req.user.id existe
+    if (!user) {
+      return next(new AppError("User not found", 404)); // Utilisation de la classe d'erreur personnalisée
+    }
+
+    // Vérifier si l'ancien mot de passe est correct
+    const match = await matchPassword(user, oldPassword);
+    if (!match) {
+      return next(new AppError("Old password is incorrect", 401)); // Utilisation de la classe d'erreur personnalisée
+    }
+
+    // Mettre à jour le mot de passe
+    user.password = newPassword; // Assurez-vous que vous avez une méthode pour cela
+    user.tokenVersion += 1;
+    await user.save();
+
+    // Envoyer un email de confirmation de changement de mot de passe
+    await sendPasswordChangeConfirmation(user.email);
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error updating password:", error); // Log d'erreur pour le débogage
+    return next(new AppError("Server error while updating password", 500)); // Utilisation de la classe d'erreur personnalisée
   }
-  // Vérifier si l'ancien mot de passe est correct
-  const match = await matchPassword(user, oldPassword);
-  if (!match) {
-    res.status(401).json({ message: "Old password is incorrect" });
-    return;
-  }
-
-  // Mettre à jour le mot de passe
-  user.password = newPassword; // Assurez-vous que vous avez une méthode pour cela
-  user.tokenVersion += 1;
-  await user.save();
-
-  // Envoyer un email de confirmation de changement de mot de passe
-  await sendPasswordChangeConfirmation(user.email);
-
-  res.status(200).json({ message: "Password updated successfully" });
-  return;
 };
 
-const updateName = async (req: Request, res: Response): Promise<void> => {
+const updateName = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { email, name } = req.body;
 
   if (!email || !name) {
-    res.status(400).json({ message: "Email and name fields are required" });
-    return;
+    return next(new AppError("Email and name fields are required", 400));
   }
 
   try {
@@ -83,54 +98,63 @@ const updateName = async (req: Request, res: Response): Promise<void> => {
     ).select("-password -_id");
 
     if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
+      return next(new AppError("User not found", 404));
     }
 
     res.status(200).json({ message: "Name updated successfully", user });
-    return;
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error updating user name" });
+    console.error("Error updating user name:", error);
+    return next(new AppError("Error updating user name", 500));
   }
 };
 
-const changeEmail = async (req: Request, res: Response): Promise<void> => {
+const changeEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { newEmail } = req.body;
 
   // Vérifiez que l'utilisateur est authentifié
   const user = req.user ?? ({} as IUser);
 
-  // Vérifiez si l'e-mail est déjà pris
-  const emailExists = await User.findOne({ email: newEmail });
-  if (emailExists) {
-    res.status(400).json({ message: "Email already in use" });
-    return;
+  try {
+    // Vérifiez si l'e-mail est déjà pris
+    const emailExists = await User.findOne({ email: newEmail });
+    if (emailExists) {
+      return next(new AppError("Email already in use", 400)); // Utilisation de la classe d'erreur personnalisée
+    }
+
+    // Générer un token de validation
+    const newEmailToken = generateMailToken();
+    user.newEmail = newEmail;
+    user.newEmailToken = newEmailToken;
+    user.newEmailVerified = false; // À valider par l'utilisateur
+    user.newEmailTokenExpires = new Date(Date.now() + 3600000); // Expires in 1 hour
+    await user.save();
+
+    // Envoyer l'e-mail de validation
+    await sendNewEmailVerification(newEmail, newEmailToken);
+
+    res
+      .status(200)
+      .json({ message: "Verification email sent to new email address" });
+  } catch (error) {
+    console.error("Error changing email:", error); // Log d'erreur pour le débogage
+    return next(new AppError("Error changing email", 500)); // Utilisation de la classe d'erreur personnalisée
   }
-
-  // Générer un token de validation
-  const newEmailToken = generateMailToken();
-  user.newEmail = newEmail;
-  user.newEmailToken = newEmailToken;
-  user.newEmailVerified = false; // À valider par l'utilisateur
-  user.newEmailTokenExpires = new Date(Date.now() + 3600000); // Expires in 1 hour
-  await user.save();
-
-  // Envoyer l'e-mail de validation
-  sendNewEmailVerification(newEmail, newEmailToken);
-
-  res
-    .status(200)
-    .json({ message: "Verification email sent to new email address" });
 };
 
-const verifyNewEmail = async (req: Request, res: Response): Promise<void> => {
+const verifyNewEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { token, email } = req.query;
 
   // Vérification de la présence du token et de l'email
   if (!token || !email) {
-    res.status(400).json({ message: "Token and email are required." });
-    return;
+    return next(new AppError("Token and email are required.", 400));
   }
 
   try {
@@ -142,8 +166,7 @@ const verifyNewEmail = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (!user) {
-      res.status(400).json({ message: "Invalid or expired token." });
-      return;
+      return next(new AppError("Invalid or expired token.", 400));
     }
 
     // Valider la nouvelle adresse e-mail
@@ -157,7 +180,7 @@ const verifyNewEmail = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({ message: "Email update confirmed successfully." });
   } catch (error) {
     console.error("Error verifying new email:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    return next(new AppError("Server error. Please try again later.", 500));
   }
 };
 
