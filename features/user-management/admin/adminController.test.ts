@@ -2,8 +2,7 @@ import request from "supertest";
 import app from "../../../app"; // Ton fichier app.ts où tu configures Express
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import User, { IUser } from "../../../models/UserModel";
-import { generateToken } from "../../Auth/authController";
+import User from "../../../models/UserModel";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 dotenv.config();

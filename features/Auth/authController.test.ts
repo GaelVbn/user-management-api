@@ -249,17 +249,14 @@ describe("PUT /auth/resetPassword", () => {
       // Vous pouvez également avoir besoin de récupérer l'utilisateur pour le token
       user = await User.findOne({ email: "testuser@example.com" });
       resetToken = user.resetPasswordToken; // Assurez-vous d'avoir le token ici
-      console.log("Reset token after forgot-password:", resetToken);
     }
   });
 
   it("should reset the password successfully with valid token and email", async () => {
-    console.log("Using token for reset:", resetToken);
     const res = await request(app)
       .put(`/auth/reset-password?token=${resetToken}&email=${user.email}`)
       .send({ newPassword: "newPassword123" });
 
-    console.log(user.password);
     // Vérifie la réponse
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty(
