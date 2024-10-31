@@ -3,7 +3,7 @@ import app from "../../app"; // Ton fichier app.ts où tu configures Express
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { generateToken } from "./authController";
-import User from "../../models/UserModel"; // Assurez-vous que le modèle User est bien typé
+import User, { IUser } from "../../models/UserModel"; // Assurez-vous que le modèle User est bien typé
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { App } from "supertest/types";
 
@@ -150,5 +150,48 @@ describe("POST /auth/login", () => {
       "message",
       '"password" is a required field'
     );
+  });
+});
+
+describe("GET /auth/verifyEmail", () => {
+  let user: any;
+
+  beforeEach(async () => {
+    // Créez un utilisateur test
+    const response = await request(app).post("/auth/register").send({
+      name: "Test User",
+      email: "testuser@example.com",
+      password: "password123",
+    });
+
+    // Récupère l'utilisateur directement depuis la base de données pour accéder au mailToken
+    user = await User.findOne({ email: "testuser@example.com" });
+  });
+
+  it("should verify email with the mailToken", async () => {
+    // Exécute la requête avec le mailToken et l'email
+    const res = await request(app).get(
+      `/auth/verify-email?token=${user.mailToken}&email=${user.email}`
+    );
+
+    // Vérifie les réponses attendues
+    expect(res.status).toEqual(200);
+    expect(res.body).toHaveProperty("message", "Email verified successfully");
+
+    // Vérifie que l'utilisateur est bien marqué comme vérifié dans la base de données
+    const verifiedUser = await User.findOne({ email: "testuser@example.com" });
+    expect(verifiedUser?.isVerified).toBe(true);
+    expect(verifiedUser?.mailToken).toBeNull(); // Vérifie que le token est supprimé
+  });
+
+  it("should throw an error if there is no mailtoken", async () => {
+    // Essayer de lancer la requête sans le mailToken
+    const res = await request(app).get(
+      `/auth/verify-email?email=${user.email}`
+    );
+
+    // Vérifie les réponses attendues
+    expect(res.status).toEqual(400);
+    expect(res.body).toHaveProperty("message", "Token and email are required");
   });
 });
