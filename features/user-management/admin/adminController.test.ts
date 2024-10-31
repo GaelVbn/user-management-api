@@ -500,3 +500,72 @@ describe("POST /admin/admin-reset-password", () => {
     );
   });
 });
+
+describe("PUT /admin/admin-Reset-Email", () => {
+  let adminUserToken: string;
+  let normalUserToken: string;
+
+  beforeEach(async () => {
+    // Créer un utilisateur normal
+    const normalUserResponse = await request(app).post("/auth/register").send({
+      name: "Normal User",
+      email: "normal-user@test.com",
+      password: "password123",
+      role: "user",
+    });
+
+    normalUserToken = normalUserResponse.body.token;
+
+    // Créer un utilisateur admin
+    const adminUserResponse = await request(app).post("/auth/register").send({
+      name: "Admin User",
+      email: "admin-user@test.com",
+      password: "adminpassword123",
+      role: "admin",
+    });
+
+    adminUserToken = adminUserResponse.body.token;
+  });
+
+  it("should return 200 if email reset email is sent to the user", async () => {
+    const res = await request(app)
+      .put("/admin/admin-reset-email")
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        email: "normal-user@test.com",
+        newEmail: "new-email-test@test.com",
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Email verification sent to the new email address"
+    );
+  });
+
+  it("should return 404 if user is not found", async () => {
+    const res = await request(app)
+      .put("/admin/admin-reset-email")
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        email: "non-existent-user@test.com",
+        newEmail: "new-email@test.com",
+      });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty("message", "User not found");
+  });
+
+  it("should return 400 if email is already in use", async () => {
+    const res = await request(app)
+      .put("/admin/admin-reset-email")
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        email: "normal-user@test.com",
+        newEmail: "normal-user@test.com",
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty("message", "Email already in use");
+  });
+});
