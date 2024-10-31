@@ -423,3 +423,80 @@ describe("PUT /admin/updateUser", () => {
     );
   });
 });
+
+describe("POST /admin/admin-reset-password", () => {
+  let adminUserToken: string;
+
+  let normalUser: any;
+
+  beforeAll(async () => {
+    // Créer un utilisateur normal
+    const normalUserResponse = await request(app).post("/auth/register").send({
+      name: "Normal User",
+      email: "normal-user-reset-password@test.com",
+      password: "password123",
+      role: "user",
+    });
+
+    normalUser = normalUserResponse.body;
+
+    // Créer un utilisateur admin
+    const adminUserResponse = await request(app).post("/auth/register").send({
+      name: "Admin User",
+      email: "admin-user-reset-password@test.com",
+      password: "adminpassword123",
+      role: "admin",
+    });
+
+    // Générer un token pour l'utilisateur admin
+    adminUserToken = adminUserResponse.body.token;
+  });
+
+  it("should return 200 if password reset email is sent to the user", async () => {
+    const res = await request(app)
+      .post("/admin/admin-Reset-Password")
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        email: "normal-user-reset-password@test.com",
+        newEmail: "normal-user-reset-password-test@test.com",
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Password reset email sent to the new email"
+    );
+  });
+
+  it("should return 401 if user is not found", async () => {
+    const res = await request(app)
+      .post("/admin/admin-Reset-Password")
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        email: "non-existent-user@test.com",
+        newEmail: "new-email@test.com",
+      });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Token is not valid or has expired"
+    );
+  });
+
+  it("should return 401 if error occurs", async () => {
+    const res = await request(app)
+      .post("/admin/admin-Reset-Password")
+      .set("Authorization", `Bearer ${adminUserToken}`)
+      .send({
+        email: "normal-user@test.com",
+        newEmail: "new-email@test.com",
+      });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Token is not valid or has expired"
+    );
+  });
+});
