@@ -183,7 +183,8 @@ const resetPassword = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { token, email, newPassword } = req.body;
+  const { token, email } = req.query;
+  const { newPassword } = req.body;
 
   try {
     if (!token || !email || !newPassword) {

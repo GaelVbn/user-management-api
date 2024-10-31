@@ -6,6 +6,7 @@ import { generateToken } from "./authController";
 import User, { IUser } from "../../models/UserModel"; // Assurez-vous que le modèle User est bien typé
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { App } from "supertest/types";
+import { generateMailToken } from "../../services/emailService";
 
 dotenv.config();
 
@@ -193,5 +194,129 @@ describe("GET /auth/verifyEmail", () => {
     // Vérifie les réponses attendues
     expect(res.status).toEqual(400);
     expect(res.body).toHaveProperty("message", "Token and email are required");
+  });
+});
+
+describe("POST /auth/forgot-password", () => {
+  it("should send a password reset email if user exists", async () => {
+    const userEmail = "existinguser@example.com";
+
+    await request(app).post("/auth/register").send({
+      name: "Existing User",
+      email: userEmail,
+      password: "password123",
+    });
+
+    const res = await request(app).post("/auth/forgot-password").send({
+      email: userEmail,
+    });
+
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty("message", "Password reset email sent");
+  });
+
+  it("should return 404 if user does not exist", async () => {
+    const res = await request(app).post("/auth/forgot-password").send({
+      email: "nonexistentuser@example.com",
+    });
+
+    expect(res.statusCode).toEqual(404);
+    expect(res.body).toHaveProperty("message", "User not found");
+  });
+});
+
+describe("PUT /auth/resetPassword", () => {
+  let user: any;
+  let resetToken: string;
+
+  beforeEach(async () => {
+    // Création d'un utilisateur de test
+    await request(app).post("/auth/register").send({
+      name: "Test User",
+      email: "testuser@example.com",
+      password: "oldPassword123",
+    });
+
+    // Récupérer l'utilisateur directement depuis la base de données
+    user = await User.findOne({ email: "testuser@example.com" });
+
+    // Demander un token de réinitialisation de mot de passe
+    const forgotPasswordResponse = await request(app)
+      .post("/auth/forgot-password")
+      .send({
+        email: user.email,
+      });
+
+    // Assurez-vous que la réponse contient le token de réinitialisation
+    if (forgotPasswordResponse.status === 200) {
+      // Vous pouvez également avoir besoin de récupérer l'utilisateur pour le token
+      user = await User.findOne({ email: "testuser@example.com" });
+      resetToken = user.resetPasswordToken; // Assurez-vous d'avoir le token ici
+      console.log("Reset token after forgot-password:", resetToken);
+    }
+  });
+
+  it("should reset the password successfully with valid token and email", async () => {
+    console.log("Using token for reset:", resetToken);
+    const res = await request(app)
+      .put(`/auth/reset-password?token=${resetToken}&email=${user.email}`)
+      .send({ newPassword: "newPassword123" });
+
+    console.log(user.password);
+    // Vérifie la réponse
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Password has been reset successfully."
+    );
+  });
+
+  it("should return 400 if token is missing", async () => {
+    const res = await request(app)
+      .put(`/auth/reset-password?email=${user.email}`)
+      .send({ newPassword: "newPassword123" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Token, email, and new password are required."
+    );
+  });
+
+  it("should return 400 if email is missing", async () => {
+    const res = await request(app)
+      .put(`/auth/reset-password?token=${resetToken}`)
+      .send({ newPassword: "newPassword123" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Token, email, and new password are required."
+    );
+  });
+
+  it("should return 400 if new password is missing", async () => {
+    const res = await request(app)
+      .put(`/auth/reset-password?token=${resetToken}&email=${user.email}`)
+      .send();
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty(
+      "message",
+      "Token, email, and new password are required."
+    );
+  });
+
+  it("should return 400 if token is invalid or expired", async () => {
+    // Expire le token en réglant la date d'expiration dans le passé
+    user.resetPasswordExpires = new Date(Date.now() - 3600000); // Expiré
+    await user.save();
+
+    const res = await request(app)
+      .put(`/auth/reset-password?token=${resetToken}&email=${user.email}`)
+      .send({ newPassword: "newPassword123" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message", "Invalid or expired token");
   });
 });

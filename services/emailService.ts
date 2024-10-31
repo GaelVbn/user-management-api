@@ -46,7 +46,7 @@ const sendPasswordChangeConfirmation = async (email: string) => {
 
 // Fonction pour envoyer un email de réinitialisation de mot de passe
 const sendPasswordResetEmail = async (email: string, token: string) => {
-  const resetLink = `${process.env.FRONTEND_URL}/auth/reset-Password-ByEmail?token=${token}&email=${email}`;
+  const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${email}`;
   const htmlContent = `<p>Click on the following link to reset your password: <a href="${resetLink}">${resetLink}</a></p>`;
   await sendEmail(email, "Password Reset Request", htmlContent);
 };
