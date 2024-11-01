@@ -43,7 +43,7 @@ router.put(
 );
 
 // Route pour verifier la nouvelle adresse mail
-router.post(
+router.get(
   "/verify-new-email",
   morganMiddleware,
   sanitizeMiddleware,

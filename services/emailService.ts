@@ -14,6 +14,15 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
+// Looking to send emails in production? Check out our Email API/SMTP product!
+// var transporter = nodemailer.createTransport({
+//   host: "smtp.mailosaur.net",
+//   port: 587,
+//   auth: {
+//     user: "80eqkn4c@mailosaur.net",
+//     pass: "BcHNjg6SkYvSVtiIDjDx9Vtzi5LgqZLn",
+//   },
+// });
 
 // Fonction générique pour envoyer des emails
 const sendEmail = async (to: string, subject: string, html: string) => {
@@ -56,7 +65,7 @@ const sendNewEmailVerification = async (
   newEmail: string,
   newEmailToken: string
 ) => {
-  const verificationLink = `${process.env.FRONTEND_URL}/auth/verify-new-email?token=${newEmailToken}&email=${newEmail}`;
+  const verificationLink = `${process.env.FRONTEND_URL}/users/verify-new-email?token=${newEmailToken}&email=${newEmail}`;
   const htmlContent = `<p>Click <a href="${verificationLink}">here</a> to verify your new email address.</p>`;
   await sendEmail(newEmail, "Verify your new email", htmlContent);
 };

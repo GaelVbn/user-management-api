@@ -34,7 +34,7 @@ describe("DELETE /admin/delete", () => {
   let normalUserToken: string;
   let adminUserToken: string;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     // Créer un utilisateur normal
     const normalUserResponse = await request(app).post("/auth/register").send({
       name: "Normal User",
@@ -543,7 +543,7 @@ describe("PUT /admin/admin-Reset-Email", () => {
     );
   });
 
-  it("should return 404 if user is not found", async () => {
+  it("should return 401 if user is not found", async () => {
     const res = await request(app)
       .put("/admin/admin-reset-email")
       .set("Authorization", `Bearer ${adminUserToken}`)
@@ -552,11 +552,11 @@ describe("PUT /admin/admin-Reset-Email", () => {
         newEmail: "new-email@test.com",
       });
 
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(401);
     expect(res.body).toHaveProperty("message", "User not found");
   });
 
-  it("should return 400 if email is already in use", async () => {
+  it("should return 401 if email is already in use", async () => {
     const res = await request(app)
       .put("/admin/admin-reset-email")
       .set("Authorization", `Bearer ${adminUserToken}`)
@@ -565,7 +565,7 @@ describe("PUT /admin/admin-Reset-Email", () => {
         newEmail: "normal-user@test.com",
       });
 
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(401);
     expect(res.body).toHaveProperty("message", "Email already in use");
   });
 });

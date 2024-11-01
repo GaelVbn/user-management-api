@@ -13,7 +13,7 @@ const app = express();
 // Interface Request : IUser
 declare global {
   namespace Express {
-    interface Request {
+    export interface Request {
       user?: IUser;
     }
   }
