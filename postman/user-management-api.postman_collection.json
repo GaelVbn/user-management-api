@@ -2,198 +2,606 @@
 	"info": {
 		"_postman_id": "61acd4ca-c8c0-4ea2-84ec-9afa75470a7d",
 		"name": "user-management-api",
+		"description": "This application is designed to provide a robust user management system, integrating authentication and authorization features to enhance security and user experience. It consists of three primary components:\n\n1. **Authentication (****`/auth`****):** The `/auth` folder handles user sign-up, login, password recovery, and email verification processes. It includes secure mechanisms for managing user credentials, ensuring that sensitive information is protected while allowing users to recover access to their accounts through email notifications and password reset functionalities.\n    \n2. **User Management - Admin (****`/user-management/admin`****):** This section empowers administrators with the tools needed to manage user accounts effectively. Admins can perform critical actions such as creating, updating, deleting users, and resetting passwords or emails on behalf of users. It also facilitates role management, ensuring that each user has the appropriate permissions for their role within the application.\n    \n3. **User Management - Users (****`/user-management/users`****):** The `/users` folder focuses on end-user functionalities, providing endpoints for users to manage their profiles, including updating personal information, changing passwords, and verifying email addresses. It ensures that users can maintain control over their accounts in a secure manner.\n    \n\nTogether, these components create a comprehensive user management ecosystem that emphasizes security, ease of use, and efficient administration, making it an essential tool for both users and administrators.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "36793061"
 	},
 	"item": [
 		{
-			"name": "Register new user",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"fred\",\n    \"email\": \"fred@gmail.com\",\n    \"password\": \"qwerty\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Hu\",\n    \"email\": \"Hu@gmail.com\",\n    \"password\": \"qwerty\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/auth/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "**Description:**\n\nThis endpoint allows the registration of a new user in the system. It requires the user to provide essential information, which will be validated before creating a new user record in the database. If the registration is successful, the endpoint will respond with the user’s details and a JWT token for authentication.\n\n**Request Body:**\n\nThe request must include a JSON body with the following fields:\n\n- **name** (string, required): The full name of the user.\n    \n- **email** (string, required): The user's email address, which must be unique and valid.\n    \n- **password** (string, required): The password for the user account, which should be at least 6 characters long.\n    \n- **role** (string, optional): The role of the user, which can either be \"user\" or \"admin\". If not provided, the default role will be \"user\".\n    \n\n**Validation:**\n\n- All fields are required. If any field is missing, a **400 Bad Request** response will be returned with the message \"All fields are required\".\n    \n- The email must match a valid email format. If the format is invalid, a **400 Bad Request** response will be returned with the message \"Invalid email format\".\n    \n- If a user with the provided email already exists, a **400 Bad Request** response will be returned with the message \"User already exists\"."
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "http://localhost:3001/users/register",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3001",
-					"path": [
-						"users",
-						"register"
-					]
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"gael.vanbeveren98@gmail.com\",\n    \"password\": \"qwerty\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "- **Description**: Allows a user to log in using their email address and password.\n    \n- **Method**: `POST`\n    \n- **Middleware**:\n    \n    - `loginLimiter`: Limits the number of login attempts to prevent brute-force attacks.\n        \n    - `sanitizeMiddleware`: Cleans user inputs to avoid injections.\n        \n    - `validateLogin`: Validates the input data to ensure it meets required criteria.\n        \n- **Request Body**:\n    \n    - **Type**: `application/json`\n        \n    - **Properties**:\n        \n        - `email` (string, required): The user's email address.\n            \n        - `password` (string, required): The user's password."
+					},
+					"response": []
 				},
-				"description": "The user provide the name, email and password."
-			},
-			"response": []
-		},
-		{
-			"name": "Login user",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"email\": \"fred@gmail.com\",\n    \"password\": \"qwertyy\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
+				{
+					"name": "verifyEmail",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"g.vanbeveren@sfr.fr\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/auth/verify-new-email",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"auth",
+								"verify-new-email"
+							]
+						},
+						"description": "### **GET /verify-email**\n\n- **Description**: Verifies a user's email address using a token and email provided in the query parameters.\n    \n- **Method**: `GET`\n    \n- **Query Parameters**:\n    \n    - `token` (string, required): The token sent to the user's email for verification.\n        \n    - `email` (string, required): The email address of the user to verify."
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "http://localhost:3001/users/login",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3001",
-					"path": [
-						"users",
-						"login"
-					]
+				{
+					"name": "ForgotPassword",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"gael.vanbeveren98@gmail.com\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/auth/forgot-password",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"auth",
+								"forgot-password"
+							]
+						},
+						"description": "- **Description**: Sends a password reset email to the user with a link containing a token for resetting their password.\n    \n- **Method**: `POST`\n    \n- **Middleware**:\n    \n    - `morganMiddleware`: Logs HTTP requests for monitoring and debugging purposes.\n        \n- **Request Body**:\n    \n    - **Type**: `application/json`\n        \n    - **Properties**:\n        \n        - `email` (string, required): The email address of the user who wants to reset their password."
+					},
+					"response": []
 				},
-				"description": "The user provide the email and password."
-			},
-			"response": []
-		},
-		{
-			"name": "Get user profile by id",
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MTYzMTVkZWY1YmViZWU2NzkxZTBmOSIsImlhdCI6MTcyOTUxOTU5OCwiZXhwIjoxNzI5NTIzMTk4fQ.h1IofXt5vH-QNSb3_CfvPx889j7uSYZLuzRicjtPe0Y",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [
-					{
-						"key": "id",
-						"value": "671617a6433295f278c62b50",
-						"type": "text",
-						"disabled": true
-					}
-				],
-				"url": {
-					"raw": "http://localhost:3001/users/profile",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3001",
-					"path": [
-						"users",
-						"profile"
-					],
-					"query": [
-						{
-							"key": "id",
-							"value": "671617a6433295f278c62b50",
-							"disabled": true
-						}
-					]
-				},
-				"description": "To get the user profile the user has to be authentifacted with a valid Token."
-			},
-			"response": []
-		},
-		{
-			"name": "delete user",
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MTYzMTVkZWY1YmViZWU2NzkxZTBmOSIsImlhdCI6MTcyOTUxOTU5OCwiZXhwIjoxNzI5NTIzMTk4fQ.h1IofXt5vH-QNSb3_CfvPx889j7uSYZLuzRicjtPe0Y",
-							"type": "string"
-						}
-					]
-				},
-				"method": "DELETE",
-				"header": [
-					{
-						"key": "id",
-						"value": "67164ca6b8d16dba8f39bf3a",
-						"type": "text",
-						"disabled": true
-					}
-				],
-				"url": {
-					"raw": "http://localhost:3001/users/delete/67164ca6b8d16dba8f39bf3a",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3001",
-					"path": [
-						"users",
-						"delete",
-						"67164ca6b8d16dba8f39bf3a"
-					],
-					"query": [
-						{
-							"key": "id",
-							"value": "67164ca6b8d16dba8f39bf3a?id",
-							"disabled": true
-						}
-					]
+				{
+					"name": "ResetPassword",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"newPassword\": \"qwertyyy\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/auth/reset-password?token=665c7c4fb50b34443c9345841a1e67104b83a0b9314eb22e5226b253a2a631d0&email=anita001023@gmail.com",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"auth",
+								"reset-password"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "665c7c4fb50b34443c9345841a1e67104b83a0b9314eb22e5226b253a2a631d0"
+								},
+								{
+									"key": "email",
+									"value": "anita001023@gmail.com"
+								}
+							]
+						},
+						"description": "### **PUT /reset-password**\n\n- **Description**: Resets a user's password using a valid token and email address. The user must provide a new password.\n    \n- **Method**: `PUT`\n    \n- **Middleware**:\n    \n    - `morganMiddleware`: Logs HTTP requests for monitoring and debugging purposes.\n        \n- **Query Parameters**:\n    \n    - `token` (string, required): The token received by the user for resetting their password.\n        \n    - `email` (string, required): The email address of the user requesting the password reset.\n        \n- **Request Body**:\n    \n    - **Type**: `application/json`\n        \n    - **Properties**:\n        \n        - `newPassword` (string, required): The new password to set for the user."
+					},
+					"response": []
 				}
-			},
-			"response": []
+			],
+			"description": "The `/auth` folder contains the authentication-related components of the application. This folder is responsible for managing user authentication processes, including login, registration, password reset, and email verification. It implements middleware, controllers, and routes to ensure secure user access and maintain user data integrity."
 		},
 		{
-			"name": "UPDATE PASSWORD",
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
+			"name": "User-Management",
+			"item": [
+				{
+					"name": "user",
+					"item": [
 						{
-							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MTY2YTY3MzBiZGZjNGIxYzI1YjkwYiIsImlhdCI6MTcyOTUyMjI3OSwiZXhwIjoxNzI5NTI1ODc5fQ.aE-lQkMuKC1vO9FciqtbHSoIgjgnF8I1bAR4_ODVEHI",
-							"type": "string"
+							"name": "GetCurrentUserProfile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MCwiaWF0IjoxNzMwNDUzNTQ2LCJleHAiOjE3MzA0NTcxNDZ9.kgcrrA6MHFH9C_9VXhn9GUIEe-Rz0led2aSN6FbVuys",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "id",
+										"value": "671617a6433295f278c62b50",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "http://localhost:3001/users/profile",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"users",
+										"profile"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "671617a6433295f278c62b50",
+											"disabled": true
+										}
+									]
+								},
+								"description": "- **Description**: Fetches the profile information of the authenticated user.\n    \n- **Method**: `GET`\n    \n- **Middleware**:\n    \n    - `protect`: Ensures the user is authenticated. This middleware checks for a valid token and attaches the authenticated user’s data to `req.user`.\n        \n- **Headers**:\n    \n    - `Authorization` (string, required): A valid JWT token in the format `Bearer` .\n        \n- **Request Body**:\n    \n    - None"
+							},
+							"response": []
+						},
+						{
+							"name": "UpdatePassword",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MCwiaWF0IjoxNzMwNDUzNTQ2LCJleHAiOjE3MzA0NTcxNDZ9.kgcrrA6MHFH9C_9VXhn9GUIEe-Rz0led2aSN6FbVuys",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"qwertyy\",\n  \"newPassword\": \"qwerty\"\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/users/update-password",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"users",
+										"update-password"
+									]
+								},
+								"description": "- **Description**: Updates the authenticated user's password. This endpoint requires the user to provide their current password for verification before allowing a password update.\n    \n- **Method**: `PUT`\n    \n- **Middleware**:\n    \n    - `morganMiddleware`: Logs request details for monitoring purposes.\n        \n    - `protect`: Ensures that the user is authenticated. Only authenticated users can access this endpoint.\n        \n    - `sanitizeMiddleware`: Sanitizes input data to enhance security.\n        \n- **Headers**:\n    \n    - `Authorization` (string, required): A valid JWT token in the format `Bearer` .\n        \n- **Request Body**:\n    \n    - `oldPassword` (string, required): The user’s current password. This is used to verify their identity before updating the password.\n        \n    - `newPassword` (string, required): The new password that the user wants to set."
+							},
+							"response": []
+						},
+						{
+							"name": "UpdateName",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MSwiaWF0IjoxNzMwNDUzNzAxLCJleHAiOjE3MzA0NTczMDF9.BqITJ5I7Pn7u5KxTGpxrj5m2NvDWNtg4QeAZMthsx1U",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"gael.vanbeveren98@gmail.com\",\n    \"name\": \"gaelvbn\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/users/updateName",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"users",
+										"updateName"
+									]
+								},
+								"description": "- **Description**: Allows an authenticated user to update their name. This endpoint requires the user’s email and the new name they wish to set.\n    \n- **Method**: `PUT`\n    \n- **Middleware**:\n    \n    - `morganMiddleware`: Logs request details for monitoring and debugging.\n        \n    - `protect`: Ensures that the user is authenticated; only authenticated users can access this endpoint.\n        \n    - `sanitizeMiddleware`: Sanitizes input data to improve security.\n        \n- **Headers**:\n    \n    - `Authorization` (string, required): A valid JWT token in the format `Bearer` .\n        \n- **Request Body**:\n    \n    - `email` (string, required): The email address associated with the user’s account.\n        \n    - `name` (string, required): The new name to update for the user."
+							},
+							"response": []
+						},
+						{
+							"name": "ChangeEmail",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MSwiaWF0IjoxNzMwNDUzNzAxLCJleHAiOjE3MzA0NTczMDF9.BqITJ5I7Pn7u5KxTGpxrj5m2NvDWNtg4QeAZMthsx1U",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"newEmail\": \"g.vanbeveren@sfr.fr\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/users/change-email",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"users",
+										"change-email"
+									]
+								},
+								"description": "- **Description**: Allows an authenticated user to change their email address. This endpoint sends a verification email to the new email address provided, which must be confirmed before the change takes effect.\n    \n- **Method**: `PUT`\n    \n- **Middleware**:\n    \n    - `morganMiddleware`: Logs request details for monitoring and debugging.\n        \n    - `protect`: Ensures the user is authenticated.\n        \n    - `sanitizeMiddleware`: Sanitizes input data to enhance security.\n        \n- **Headers**:\n    \n    - `Authorization` (string, required): A valid JWT token in the format `Bearer` .\n        \n- **Request Body**:\n    \n    - `newEmail` (string, required): The new email address that the user wants to associate with their account."
+							},
+							"response": []
+						},
+						{
+							"name": "VerifyNewEmail",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://6d23-37-171-101-12.ngrok-free.app/users/verify-new-email?token=a21d765c06b3b8dc5c3fc5b6d9edcaf543e387a61d3f6b2a2fb1f0d9d3ef4bfc&email=gael.vanbeveren98@gmail.com",
+									"protocol": "https",
+									"host": [
+										"6d23-37-171-101-12",
+										"ngrok-free",
+										"app"
+									],
+									"path": [
+										"users",
+										"verify-new-email"
+									],
+									"query": [
+										{
+											"key": "token",
+											"value": "a21d765c06b3b8dc5c3fc5b6d9edcaf543e387a61d3f6b2a2fb1f0d9d3ef4bfc"
+										},
+										{
+											"key": "email",
+											"value": "gael.vanbeveren98@gmail.com"
+										}
+									]
+								},
+								"description": "Here’s the documentation for the `/verify-new-email` endpoint based on the `verifyNewEmail` function:\n\n---\n\n- **Description**: Confirms a user's new email address by validating a token sent to the new email address. This endpoint is used to complete the email update process after the user initiates an email change.\n    \n- **Method**: `GET`\n    \n- **Middleware**:\n    \n    - `morganMiddleware`: Logs request details for monitoring and debugging.\n        \n    - `sanitizeMiddleware`: Sanitizes input data to enhance security.\n        \n- **Query Parameters**:\n    \n    - `token` (string, required): The unique token sent to the new email address for verification.\n        \n    - `email` (string, required): The new email address to be verified."
+							},
+							"response": []
 						}
-					]
-				},
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"oldPassword\": \"ancienMotDePasse\",\n  \"newPassword\": \"nouveauMotDePasse\"\n}\n",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:3001/users/update-password",
-					"protocol": "http",
-					"host": [
-						"localhost"
 					],
-					"port": "3001",
-					"path": [
-						"users",
-						"update-password"
-					]
+					"description": "The `/users` folder contains endpoints that handle user-related functionalities within the application. These endpoints manage user authentication, account settings, and profile management. Middleware is utilized across the endpoints to ensure input validation, request logging, and access protection, enhancing security and data integrity."
+				},
+				{
+					"name": "admin",
+					"item": [
+						{
+							"name": "DeleteUser",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MSwiaWF0IjoxNzMwNDU0NTk4LCJleHAiOjE3MzA0NTgxOTh9.YLqIkj8jxXHtnKdoK5MMeQfAxdetl2C5c2cdyAHmRS8",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "id",
+										"value": "67164ca6b8d16dba8f39bf3a",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/admin/delete",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"admin",
+										"delete"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "67164ca6b8d16dba8f39bf3a?id",
+											"disabled": true
+										}
+									]
+								},
+								"description": "- **Description**: Deletes a user from the database based on the email provided in the request body. Only administrators are authorized to perform this action, ensuring that user data can only be removed by authorized personnel.\n    \n- **HTTP Method**: `DELETE`\n    \n- **Access Control**: Admins only (requires authentication and admin role authorization).\n    \n- **URL Path**: `/users/delete`\n    \n\n#### **Middleware Used**\n\n1. **`morganMiddleware`**: Logs request data for debugging and tracking.\n    \n2. **`protect`**: Ensures the endpoint is accessed by an authenticated user.\n    \n3. **`authRole(\"admin\")`**: Restricts access to users with the \"admin\" role.\n    \n4. **`sanitizeMiddleware`**: Cleans input data to prevent potential injection attacks.\n    \n\n#### **Request**\n\n- **Body Parameters**:\n    \n    - `email` (string): The email address of the user to be deleted. _(Required)_"
+							},
+							"response": []
+						},
+						{
+							"name": "GetAllUsers",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MWE0NDliNGU5OWM2ZTg2M2E0ZGJkYyIsImlhdCI6MTcyOTg2Mzk4MSwiZXhwIjoxNzI5ODY3NTgxfQ.HQfjMl__U6KgOiPM7GO8G7KJUvgNEwfuasEAhFEZZcg",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:3001/admin/getAllUsers?sortBy=updatedAt&order=asc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"admin",
+										"getAllUsers"
+									],
+									"query": [
+										{
+											"key": "sortBy",
+											"value": "updatedAt"
+										},
+										{
+											"key": "order",
+											"value": "asc"
+										}
+									]
+								},
+								"description": "- **Description**: Retrieves a paginated list of all users, with optional filtering by role, name, or email. Only accessible by administrators.\n    \n- **HTTP Method**: `GET`\n    \n- **Access Control**: Admins only (requires authentication and admin role authorization).\n    \n- **URL Path**: `/users/getAllUsers`\n    \n\n#### **Middleware Used**\n\n1. **`morganMiddleware`**: Logs request data.\n    \n2. **`protect`**: Ensures the endpoint is accessed by an authenticated user.\n    \n3. **`authRole(\"admin\")`**: Restricts access to users with the \"admin\" role.\n    \n4. **`sanitizeMiddleware`**: Cleans input data to prevent injection attacks.\n    \n\n#### **Request**\n\n- **Query Parameters**:\n    \n    - **`role`** (string, optional): Filters users by role (e.g., `\"admin\"` or `\"user\"`).\n        \n    - **`name`** (string, optional): Searches for users whose names match the input (case-insensitive).\n        \n    - **`email`** (string, optional): Searches for users with emails matching the input (case-insensitive).\n        \n    - **`sortBy`** (string, optional, default: `\"createdAt\"`): Field to sort the results by.\n        \n    - **`order`** (string, optional, default: `\"asc\"`): Sort order, either `\"asc\"` or `\"desc\"`.\n        \n    - **`page`** (string, optional, default: `\"1\"`): Page number for pagination.\n        \n    - **`limit`** (string, optional, default: `\"10\"`): Number of users to return per page."
+							},
+							"response": []
+						},
+						{
+							"name": "UpdateUser",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MSwiaWF0IjoxNzMwNDU0NTk4LCJleHAiOjE3MzA0NTgxOTh9.YLqIkj8jxXHtnKdoK5MMeQfAxdetl2C5c2cdyAHmRS8",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"Huu@gmail.com\",\n  \"field\": \"role\",\n  \"value\": \"user\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/admin/updateUser",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"admin",
+										"updateUser"
+									]
+								},
+								"description": "- **Description**: Allows an administrator to update specific fields for a user based on their email address.\n    \n- **HTTP Method**: `PUT`\n    \n- **Access Control**: Admins only (requires authentication and admin role authorization).\n    \n- **URL Path**: `/users/updateUser`\n    \n\n#### **Middleware Used**\n\n1. **`morganMiddleware`**: Logs request data.\n    \n2. **`protect`**: Ensures the endpoint is accessed by an authenticated user.\n    \n3. **`authRole(\"admin\")`**: Restricts access to users with the \"admin\" role.\n    \n4. **`sanitizeMiddleware`**: Cleans input data to prevent injection attacks.\n    \n\n#### **Request**\n\n- **Body Parameters**:\n    \n    - **`email`** (string, required): Email of the user to be updated.\n        \n    - **`field`** (string, required): The specific field to update (e.g., `\"name\"`, `\"role\"`).\n        \n    - **`value`** (any, required): The new value to set for the specified field."
+							},
+							"response": []
+						},
+						{
+							"name": "adminResetPassword",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MSwiaWF0IjoxNzMwNDU0NTk4LCJleHAiOjE3MzA0NTgxOTh9.YLqIkj8jxXHtnKdoK5MMeQfAxdetl2C5c2cdyAHmRS8",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"anita001023@gmail.com\",\n  \"newEmail\": \"gael.vanbeveren98@gmail.com\"\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/admin/admin-Reset-Password",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"admin",
+										"admin-Reset-Password"
+									]
+								},
+								"description": "- **Description**: Enables an administrator to initiate a password reset for a user and send a reset email to a specified address.\n    \n- **HTTP Method**: `POST`\n    \n- **Access Control**: Admins only (requires authentication and admin role authorization).\n    \n- **URL Path**: `/users/admin-Reset-Password`\n    \n\n#### **Middleware Used**\n\n1. **`morganMiddleware`**: Logs request data.\n    \n2. **`protect`**: Ensures the endpoint is accessed by an authenticated user.\n    \n3. **`authRole(\"admin\")`**: Restricts access to users with the \"admin\" role.\n    \n4. **`sanitizeMiddleware`**: Cleans input data to prevent injection attacks.\n    \n\n#### **Request**\n\n- **Body Parameters**:\n    \n    - **`email`** (string, required): Email of the user whose password is to be reset.\n        \n    - **`newEmail`** (string, required): Email address to which the reset token should be sent."
+							},
+							"response": []
+						},
+						{
+							"name": "AdminResetEmail",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjQ5ZmQ1MmExNDQyMmEyNTU2OTZjMiIsInRva2VuVmVyc2lvbiI6MSwiaWF0IjoxNzMwNDU0NTk4LCJleHAiOjE3MzA0NTgxOTh9.YLqIkj8jxXHtnKdoK5MMeQfAxdetl2C5c2cdyAHmRS8",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"anita001023@gmail.com\",\n    \"newEmail\": \"gael.vanbeveren98@gmail.com\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/admin/admin-reset-email",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"admin",
+										"admin-reset-email"
+									]
+								},
+								"description": "- **Description**: Allows an administrator to update a user's email address and send a verification email to the new address.\n    \n- **HTTP Method**: `PUT`\n    \n- **Access Control**: Admins only (requires authentication and admin role authorization).\n    \n- **URL Path**: `/users/admin-reset-email`\n    \n\n#### **Middleware Used**\n\n1. **`morganMiddleware`**: Logs request data for monitoring and debugging.\n    \n2. **`protect`**: Ensures the endpoint is accessed by an authenticated user.\n    \n3. **`authRole(\"admin\")`**: Restricts access to users with the \"admin\" role.\n    \n4. **`sanitizeMiddleware`**: Cleans input data to prevent injection attacks.\n    \n\n#### **Request**\n\n- **Body Parameters**:\n    \n    - **`email`** (string, required): The current email address of the user whose email is to be reset.\n        \n    - **`newEmail`** (string, required): The new email address to which the verification email will be sent."
+							},
+							"response": []
+						}
+					],
+					"description": "The **`admin`** folder contains all functionalities and endpoints specifically designed for administrative users to manage the application’s user base and system settings. It includes features such as:\n\n- **User Management:** Administrators can perform actions like creating, updating, and deleting user accounts, as well as resetting passwords and changing email addresses.\n    \n- **Role Management:** Admins have the ability to assign or modify user roles, ensuring appropriate permissions and access levels within the application.\n    \n- **Data Retrieval:** This section provides endpoints for fetching user lists and details, allowing admins to monitor user activity and maintain oversight of the user base.\n    \n\nOverall, the `admin` folder is essential for maintaining control, security, and efficient user management within the application."
 				}
-			},
-			"response": []
+			],
+			"description": "The **`user-management`** folder contains all the functionalities related to user administration and profile management within the application. It is organized into two main sections:\n\n1. **Admin Operations** (`/admin`): This section provides endpoints for administrators to manage user accounts. It includes functionalities for resetting passwords, updating user details, changing email addresses, and retrieving lists of users. Admins can perform actions such as banning users and changing their roles, ensuring effective oversight and control over user management.\n    \n2. **User Profile Operations** (`/users`): This section allows users to manage their profiles, including updating personal information, changing passwords, verifying email addresses, and accessing their profile details. It ensures that users can maintain their accounts securely and easily, while also providing necessary protections against unauthorized access.\n    \n\nTogether, these functionalities support comprehensive user management, enhancing both administrative control and user experience."
 		}
 	]
 }

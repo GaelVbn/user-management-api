@@ -1,128 +1,119 @@
-# API de Gestion d'Utilisateurs
+# User Management API
 
-Ce projet est une API de gestion d'utilisateurs construite avec la stack MEN (MongoDB, Express, Node.js). Il permet de gérer les utilisateurs avec des fonctionnalités comme l'inscription, la connexion et la récupération du profil utilisateur. L'authentification se fait via JWT (JSON Web Tokens).
+This project is a user management API built with the MEN stack (MongoDB, Express, Node.js). It enables user management with features such as registration, login, and profile retrieval. Authentication is handled via JWT (JSON Web Tokens).
 
-## Table des Matières
+## Table of Contents
 
-- [Fonctionnalités](#fonctionnalités)
-- [Prérequis](#prérequis)
+- [Features](#features)
+- [Middlewares](#middlewares)
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
-- [Documentation API Postman](#documentation-api-postman)
+- [Postman API Documentation](#postman-api-documentation)
 - [Tests](#tests)
-- [AuthSecurity](#auth-security)
-- [AuthRole](#auth-role)
 
-## Fonctionnalités
+---
 
-- **Inscription** d'un utilisateur avec un email unique
-- **Connexion** d'un utilisateur avec un email et un mot de passe
-- **Récupération du profil utilisateur** avec un token JWT
+## Features
 
-## Prérequis
+### Authentication
 
-- Node.js et npm installés localement
-- MongoDB (local ou hébergé)
+- **User Registration**: Allows a new user to sign up with a unique email.
+- **User Login**: Authenticates a user with an email and password.
+- **User Profile Retrieval**: Access the user profile with a valid JWT token.
+- **Forgot Password**: Handles password reset through email.
+
+### User Management
+
+The user management module is divided into two sections:
+
+- **Users**:
+
+  - Retrieve profile details
+  - Update user password and name
+  - Request email change and verify the new address
+
+- **Admin**:
+  - Delete a user by ID
+  - List all users
+  - Update user name or role
+  - Send a password reset email to the user's new email
+
+---
+
+## Middlewares
+
+This API uses several middlewares to handle security, validation, and request limiting.
+
+### Security and Validation Middlewares
+
+- **sanitizeMiddleware**: Cleans user inputs to prevent XSS attacks.
+- **loggerMiddleware**: Configures the Winston logger to log in JSON format to both the `combined.log` file and the console. Uses Morgan to log HTTP requests.
+- **errorMiddleware**: Manages global application errors, returning specific or generic error messages based on the case.
+- **validateRegister** and **validateLogin**: Respectively validate registration and login data against predefined schemas. If validation fails, they return a 400 error.
+
+### Rate Limiting and Authentication Middlewares
+
+- **loginLimiter**: Limits login attempts by IP within a 15-minute window. If the limit is exceeded, it returns a 429 error.
+- **protect**: Checks the validity of a JWT token to authenticate the user and adds user information to the request object.
+- **authRole**: Restricts route access based on the user role. If the role does not match, it returns a 403 error.
+
+---
+
+## Prerequisites
+
+- **Node.js** and **npm** installed locally.
+- **MongoDB** (locally or hosted).
 
 ## Installation
 
-1. Clonez le dépôt :
+1. Clone the repository:
+
    ```bash
    git clone https://github.com/GaelVbn/user-management-api.git
+
    ```
-2. Installer les dépendances :
+
+2. Install dependencies:
 
    npm install
 
-3. Créez un fichier .env à la racine du projet avec les informations suivantes :
+3. Create a .env file in the project root with the following details:
 
    MONGO_URI=mongodb://localhost:27017/user-management
    JWT_SECRET=tonSecret
 
-   -> dans le terminal effectuer cette ligne de commande pour générer la key de 'tonSecret' :
+   //nodemailer
+   MAIL_HOST=
+   MAIL_PORT=
+   EMAIL_USER=
+   EMAIL_PASS=
+   FRONTEND_URL=
+
+   --> To generate the JWT_SECRET key, run this command in the terminal:
    `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
-4. Lancer le serveur en mode développement :
+4. Start the server in development mode:
 
    npm run dev
 
-   ou en mode production => npm start
+   Or to start the server in production mode: npm start
 
-## Documentation API Postman
+## Postman API Documentation
 
-Un fichier Postman contenant les requêtes de l'API est disponible. Vous pouvez l'importer dans Postman pour tester facilement l'API :
+A Postman collection with all the API requests is available, making it easy to test the API:
 
-- Fichier : `postman/user-management-api.postman_collection.json`
+- File : `postman/user-management-api.postman_collection.json`
+- Documentation : "https://documenter.getpostman.com/view/36793061/2sAY4x9MMF"
 
 ### Instructions :
 
-1. Télécharger le fichier `.json`.
-2. Ouvrir Postman.
-3. Cliquer sur **Import** dans Postman et sélectionner le fichier JSON.
-4. Utilisez les différentes requêtes disponibles pour tester l'API (inscription, connexion, récupération du profil, etc.).
+1. Download the `.json` file.
+2. Open Postman.
+3. Click on **Import** in Postman and select the JSON file.
+4. Use the different available requests to test the API (registration, login, profile retrieval, etc.).
 
 ## Tests
 
-La section des tests inclut des tests automatisés pour vérifier les fonctionnalités de l'API. Cela couvre les scénarios de tests unitaires, d'intégration et fonctionnels.
+Automated tests are included to verify the API’s functionality. These cover unit tests, integration tests, and functional scenarios.
 
-Tous les tests sont détaillés dans le fichier **tests**/TESTS.md. Ce fichier inclut des exemples de cas de tests comme :
-
-- Inscription d'un nouvel utilisateur
-- Tentative de connexion avec des informations incorrectes
-
-Exécutez les tests avec la commande : npm test
-
-## AuthSecurity
-
-### Validation des Entrées Utilisateurs avec Joi
-
-Pour valider les entrées des utilisateurs dans les routes d'inscription et de connexion, nous utilisons la bibliothèque **Joi**. Cela garantit que les données envoyées au serveur respectent un certain format, évitant ainsi les données incorrectes ou potentiellement malveillantes.
-
-#### Intégration de Joi
-
-Dans notre route d'inscription, nous avons défini un schéma `registerSchema` pour valider les champs suivants :
-
-- `name` : doit être une chaîne de caractères.
-- `email` : doit être un email valide.
-- `password` : doit être une chaîne de caractères avec un minimum de 6 caractères.
-
--> Vous trouverez le schema dans le fichier `models/validations.js`
--> Vous trouverez le middleware dans le fichier `middlewares/validationMiddleware.js`
-
-#### Intégration de Express-rate-limit
-
-Pour protéger l'application contre les attaques par force brute, nous utilisons express-rate-limit. Ce middleware limite le nombre de tentatives de connexion échouées par une IP donnée pendant une certaine période.
-
-Dans notre route de connexion, nous avons mis en place une limite de 5 tentatives de connexion échouées par IP sur une fenêtre de 15 minutes. Si cette limite est dépassée, l'IP sera bloquée pendant 15 minutes supplémentaires avant de pouvoir réessayer.
-
--> Vous trouverez ce middleware dans le fichier `middlewares/loginLimiterMiddleware.js`
-
-Ce middleware est ensuite utilisé dans la route de connexion : `router.post("/login", loginLimiter, validateLogin, loginUser);`
-
-## AuthRole
-
-Cette API utilise un système de rôles pour gérer les autorisations des utilisateurs. Actuellement, seule l'option de suppression d'un utilisateur est restreinte aux administrateurs.
-
-### Rôles disponibles
-
-- **admin** : Accès complet, y compris la possibilité de supprimer des utilisateurs.
-- **user** : Accès limité, sans la possibilité de supprimer d'autres utilisateurs.
-
-### Routes protégées
-
-- **DELETE** `/users/delete/:id` : Seuls les utilisateurs avec le rôle **admin** peuvent accéder à cette route pour supprimer un utilisateur.
-
-### Exemple d'Utilisation
-
-Pour supprimer un utilisateur, un administrateur doit envoyer une requête DELETE à la route suivante :
-
-- DELETE http://localhost:3001/users/delete/:id
-
-#### Exemple de requête
-
-Voici un exemple de requête à effectuer avec **curl** :
-
-     curl -X DELETE http://localhost:3001/users/delete/67164ca6b8d16dba8f39bf3a \
-      -H "Authorization: Bearer <TOKEN_ADMIN>"
-
-Assurez-vous d’inclure un token JWT valide avec le rôle admin dans l’en-tête Authorization pour accéder à cette route.
-Si un utilisateur sans le rôle d'administrateur tente d'accéder à cette route, il recevra une réponse d'erreur (403 Forbidden).
+Run the tests with the following command: npm test

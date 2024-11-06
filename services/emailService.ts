@@ -14,15 +14,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
-// Looking to send emails in production? Check out our Email API/SMTP product!
-// var transporter = nodemailer.createTransport({
-//   host: "smtp.mailosaur.net",
-//   port: 587,
-//   auth: {
-//     user: "80eqkn4c@mailosaur.net",
-//     pass: "BcHNjg6SkYvSVtiIDjDx9Vtzi5LgqZLn",
-//   },
-// });
 
 // Fonction générique pour envoyer des emails
 const sendEmail = async (to: string, subject: string, html: string) => {
